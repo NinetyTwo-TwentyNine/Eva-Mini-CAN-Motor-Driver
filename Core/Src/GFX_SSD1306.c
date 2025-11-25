@@ -469,45 +469,43 @@ void clearDisplay(void) {
 
 void shiftOut(GPIO_TypeDef * dataPort, uint32_t dataPin, GPIO_TypeDef * clockPort, uint32_t clockPin, uint8_t bitOrder, uint8_t val)
 {
-	if (bitOrder == 0) {
-		// LSB first
-		for (uint8_t mask = 1; mask != 0; mask <<= 1)
-		{
-			if (val & mask)
-			{
-				LL_GPIO_SetOutputPin(dataPort, dataPin);
-			}
-			else
-			{
-				LL_GPIO_ResetOutputPin(dataPort, dataPin);
-			}
-			
-			__NOP(); __NOP(); __NOP();
-			LL_GPIO_SetOutputPin(clockPort, clockPin);
-			__NOP(); __NOP(); __NOP();
-			LL_GPIO_ResetOutputPin(clockPort, clockPin);
-    }
-	}
-	else
+#if SSD1306_MSB_FIRST
+	// MSB first
+	for (uint8_t mask = 0x80; mask != 0; mask >>= 1)
 	{
-		// MSB first
-		for (uint8_t mask = 0x80; mask != 0; mask >>= 1)
+		if (val & mask)
 		{
-			if (val & mask)
-			{
-				LL_GPIO_SetOutputPin(dataPort, dataPin);
-			}
-			else
-			{
-				LL_GPIO_ResetOutputPin(dataPort, dataPin);
-			}
-
-			__NOP(); __NOP(); __NOP();
-			LL_GPIO_SetOutputPin(clockPort, clockPin);
-			__NOP(); __NOP(); __NOP();
-			LL_GPIO_ResetOutputPin(clockPort, clockPin);
+			LL_GPIO_SetOutputPin(dataPort, dataPin);
 		}
+		else
+		{
+			LL_GPIO_ResetOutputPin(dataPort, dataPin);
+		}
+
+		//__NOP(); __NOP(); __NOP();
+		LL_GPIO_SetOutputPin(clockPort, clockPin);
+		__NOP(); __NOP(); __NOP();
+		LL_GPIO_ResetOutputPin(clockPort, clockPin);
 	}
+#else
+	// LSB first
+	for (uint8_t mask = 1; mask != 0; mask <<= 1)
+	{
+		if (val & mask)
+		{
+			LL_GPIO_SetOutputPin(dataPort, dataPin);
+		}
+		else
+		{
+			LL_GPIO_ResetOutputPin(dataPort, dataPin);
+		}
+		
+		//__NOP(); __NOP(); __NOP();
+		LL_GPIO_SetOutputPin(clockPort, clockPin);
+		__NOP(); __NOP(); __NOP();
+		LL_GPIO_ResetOutputPin(clockPort, clockPin);
+  }
+#endif
 }
 
 void fastSPIwrite(uint8_t d) {

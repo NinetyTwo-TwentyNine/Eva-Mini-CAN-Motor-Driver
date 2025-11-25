@@ -144,6 +144,8 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 	ssd1306_begin_default();
+	display_update();
+	clearDisplay();
 	
 	LL_CAN_Init(true);
 	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),10, 0));
@@ -210,7 +212,7 @@ int main(void)
 				else if (mcp23_check_result_input == 0 && mcp23_check_result_output == 1)
 				{
 					display_update();
-					LL_mDelay(2000);
+					LL_mDelay(1000);
 					
 					clearDisplay();
 					setTextSize(1);

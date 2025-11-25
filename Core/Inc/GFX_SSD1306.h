@@ -64,6 +64,8 @@ All text above, and the splash screen must be included in any redistribution
   #define SSD1306_LCDHEIGHT                 32
 #endif
 
+#define SSD1306_MSB_FIRST true
+
 #define SSD1306_SETCONTRAST 0x81
 #define SSD1306_DISPLAYALLON_RESUME 0xA4
 #define SSD1306_DISPLAYALLON 0xA5
@@ -124,13 +126,6 @@ extern int8_t _i2caddr, _vccstate;
   void clearDisplay(void);
   void invertDisplay(uint8_t i);
   void display_update(void);
-
-  void startscrollright(uint8_t start, uint8_t stop);
-  void startscrollleft(uint8_t start, uint8_t stop);
-
-  void startscrolldiagright(uint8_t start, uint8_t stop);
-  void startscrolldiagleft(uint8_t start, uint8_t stop);
-  void stopscroll(void);
 
   void dim(uint8_t dim);
 

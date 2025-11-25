@@ -4,6 +4,7 @@
 #include "main.h"
 
 //uint32_t get_tim1_clock(void);
+//uint32_t get_tim2_clock(void);
 float calculate_frequency(uint8_t sensor_num);
 void capture_value(TIM_TypeDef* timer, uint8_t channel);
 
