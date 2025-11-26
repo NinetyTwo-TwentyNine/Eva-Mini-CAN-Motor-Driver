@@ -48,7 +48,7 @@ uint64_t time_now = 0;
 
 // Frequency calculation
 volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX] = {{0}, {0}, {0}, {0}};
-volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initialize the 'initial' pos as true
+volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initialize the 'initial' pos (IC_ARRAY8_POS_CAPTURE_INITIAL) as true
 float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 
 SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX] = {
@@ -67,6 +67,9 @@ uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_r
 // CAN
 uint8_t can_last_send_success = false;
 uint64_t can_last_send_time = 0;
+
+// UI
+uint8_t main_text_size = 2;
 
 /* USER CODE END PV */
 
@@ -215,6 +218,7 @@ int main(void)
 					LL_mDelay(1000);
 					
 					clearDisplay();
+					
 					setTextSize(1);
 					setTextColor(WHITE, WHITE);
 					setCursor(0,0);
@@ -226,7 +230,7 @@ int main(void)
 						{
 							display_println();
 						}
-					}    
+					}
 					display_update();
 					clearDisplay();
 				}

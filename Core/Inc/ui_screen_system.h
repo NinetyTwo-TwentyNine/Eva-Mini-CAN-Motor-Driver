@@ -4,27 +4,39 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 typedef enum
 {
 	VISUAL_TYPE_TEXT,
-	VISUAL_TYPE_CIRCLE,
+	VISUAL_TYPE_LINES,
 	VISUAL_TYPE_TRIANGLE,
+	VISUAL_TYPE_RECTANGLE,
+	VISUAL_TYPE_CIRCLE,
 	VISUAL_TYPE_BITMAP,
 } UI_Element_Visual_Type;
+
+typedef enum
+{
+	PRESS_TYPE_OK,
+	PRESS_TYPE_UP,
+	PRESS_TYPE_DOWN,
+	PRESS_TYPE_OTHER
+} UI_Element_Press_Type;
 
 typedef struct Struct_UI_Element_Visual UI_Element_Visual;
 typedef struct Struct_UI_Element_Interactable UI_Element_Interactable;
 typedef struct Struct_UI_Screen UI_Screen;
 
-typedef void (*UI_Callback)(UI_Screen* screen, UI_Element_Interactable* element);
+typedef void (*UI_Callback)(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element);
 
 struct Struct_UI_Element_Visual {
 	char id[4];
 	UI_Element_Visual_Type type;
 	uint8_t pos_x, pos_y;
-	uint8_t tab_index;
-	uint16_t color;
+	uint8_t color;
+	
+	int8_t tab_index;
 	
 	//UI_Element_Interactable* interactable;
 	
@@ -50,7 +62,7 @@ struct Struct_UI_Element_Interactable {
 };
 
 struct Struct_UI_Screen {
-	UI_Element_Interactable ineractables[32];
+	UI_Element_Interactable interactables[32];
 	uint8_t interactables_count;
 	
 	UI_Element_Visual visuals[32];
@@ -60,5 +72,14 @@ struct Struct_UI_Screen {
 	uint8_t item_is_selected;
 };
 
+
+void clearElements(UI_Screen* screen);
+void hoverNext(UI_Screen* screen, uint8_t direction);
+void selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected);
+
+UI_Element_Visual* addVisualElement(UI_Screen* screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index);
+UI_Element_Visual* addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, char* text, uint8_t font);
+UI_Element_Visual* addRect(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t w, uint8_t h, uint8_t is_hollow);
+UI_Element_Interactable* bindInteractable(UI_Screen* screen, UI_Element_Visual* v, UI_Callback callback);
 
 #endif // _UI_SYS

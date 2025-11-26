@@ -22,6 +22,7 @@ All text above, and the splash screen must be included in any redistribution
 
 #include "GFX_General.h"
 #include "i2c_control.h"
+#include "ui_screen_system.h"
 
 
 #define BLACK 0
@@ -141,5 +142,7 @@ extern int8_t _i2caddr, _vccstate;
 
   inline void drawFastVLineInternal(int16_t x, int16_t y, int16_t h, uint16_t color) __attribute__((always_inline));
   inline void drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) __attribute__((always_inline));
+	
+	void buildUIScreen(UI_Screen* screen);
 
 #endif // _GFX_SSD1306_H

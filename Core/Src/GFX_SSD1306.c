@@ -732,3 +732,77 @@ void drawFastVLineInternal(int16_t x, int16_t __y, int16_t __h, uint16_t color) 
     }
   }
 }
+
+// UI screen visualizer
+void buildUIScreen(UI_Screen* screen)
+{
+	clearDisplay();
+	
+	uint8_t offset_y = 0;
+	UI_Element_Visual* curr_hovered = screen->hovered;
+	uint16_t comparison_height = (SCREEN_HEIGHT - main_text_size * 8);
+	if (curr_hovered->pos_y > comparison_height)
+	{
+		offset_y = curr_hovered->pos_y - comparison_height;
+	}
+	
+	for (uint8_t i = 0; i < screen->visuals_count; i++)
+	{
+		UI_Element_Visual* curr_visual = &(screen->visuals[i]);
+		int16_t x0 = curr_visual->pos_x, y0 = curr_visual->pos_y - offset_y;
+		setCursor(x0, y0);
+		switch(curr_visual->type)
+		{
+			case VISUAL_TYPE_TEXT:
+			{
+				setTextColor(WHITE, WHITE);
+				setTextSize(curr_visual->data.text.font);
+				display_print(curr_visual->data.text.text);
+			} break;
+			case VISUAL_TYPE_LINES: 
+			{
+				uint8_t prev_pos_x = x0, prev_pos_y = y0;
+				for (uint8_t j = 0; j < curr_visual->data.lines.line_count-1; j++)
+				{
+					uint8_t new_pos_x = x0 + curr_visual->data.lines.x_n[j], new_pos_y = y0 + curr_visual->data.lines.y_n[j];
+					drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, WHITE);
+					prev_pos_x = new_pos_x;
+					prev_pos_y = new_pos_y;
+				}
+			}	break;
+			case VISUAL_TYPE_TRIANGLE:
+			{
+				uint8_t x1 = x0 + curr_visual->data.triangle.x1, y1 = y0 + curr_visual->data.triangle.y1, x2 = x0 + curr_visual->data.triangle.x2, y2 = y0 + curr_visual->data.triangle.y2;
+				drawTriangle(x0, y0, x1, y1, x2, y2, WHITE);
+				if (!curr_visual->data.triangle.is_hollow)
+				{
+					fillTriangle(x0, y0, x1, y1, x2, y2, WHITE);
+				}
+			}	break;
+			case VISUAL_TYPE_RECTANGLE: 
+			{
+				drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
+				if (!curr_visual->data.rectangle.is_hollow)
+				{
+					fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
+				}
+			}	break;
+			case VISUAL_TYPE_CIRCLE:
+			{
+				uint8_t r = curr_visual->data.circle.radius, new_x = x0 + r, new_y = y0 - r;
+				drawCircle(new_x, new_y, r, WHITE);
+				if (!curr_visual->data.circle.is_hollow)
+				{
+					fillCircle(new_x, new_y, r, WHITE);
+				}
+			}	break;
+			case VISUAL_TYPE_BITMAP:
+			{
+				drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, WHITE);
+			}	break;
+		}
+	}
+	
+	display_update();
+}		
+

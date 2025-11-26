@@ -160,6 +160,9 @@ extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_out
 extern uint8_t can_last_send_success;
 extern uint64_t can_last_send_time;
 
+// UI
+extern uint8_t main_text_size;
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
