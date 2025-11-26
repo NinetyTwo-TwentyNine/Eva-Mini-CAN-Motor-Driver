@@ -1,6 +1,25 @@
-#include "ui_screen_system.h"
+#ifndef _UI_SYS
+#define _UI_SYS
 
-struct UI_Element_Visual {
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef enum
+{
+	VISUAL_TYPE_TEXT,
+	VISUAL_TYPE_CIRCLE,
+	VISUAL_TYPE_TRIANGLE,
+	VISUAL_TYPE_BITMAP,
+} UI_Element_Visual_Type;
+
+typedef struct Struct_UI_Element_Visual UI_Element_Visual;
+typedef struct Struct_UI_Element_Interactable UI_Element_Interactable;
+typedef struct Struct_UI_Screen UI_Screen;
+
+typedef void (*UI_Callback)(UI_Screen* screen, UI_Element_Interactable* element);
+
+struct Struct_UI_Element_Visual {
 	char id[4];
 	UI_Element_Visual_Type type;
 	uint8_t pos_x, pos_y;
@@ -21,7 +40,7 @@ struct UI_Element_Visual {
 	UI_Screen* context;
 };
 
-struct UI_Element_Interactable {
+struct Struct_UI_Element_Interactable {
 	char id[4];
 	
 	UI_Element_Visual* visual;
@@ -30,7 +49,7 @@ struct UI_Element_Interactable {
 	UI_Screen* context;
 };
 
-struct UI_Screen {
+struct Struct_UI_Screen {
 	UI_Element_Interactable ineractables[32];
 	uint8_t interactables_count;
 	
@@ -40,3 +59,6 @@ struct UI_Screen {
 	UI_Element_Visual* hovered;
 	uint8_t item_is_selected;
 };
+
+
+#endif // _UI_SYS

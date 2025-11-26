@@ -22,7 +22,6 @@ All text above, and the splash screen must be included in any redistribution
 
 #include "GFX_General.h"
 #include "i2c_control.h"
-#include "string.h"
 
 
 #define BLACK 0

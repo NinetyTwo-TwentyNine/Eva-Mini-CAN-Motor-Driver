@@ -1,32 +1,25 @@
 #include "frequency_calc_basic.h"
 
-uint32_t get_apb1_timer_clock() {
-	uint32_t ppre1 = (RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos;
-
-	// If APB1 prescaler > 1 ? timer clock = PCLK1 × 2
-	if (ppre1 == 0) {
-    // HCLK not divided ? PCLK1 = HCLK
-    return SystemCoreClock;
-	} else {
-    // Decode prescaler (bitfield values start at divide-by-2)
-    uint32_t div = 1 << ((ppre1 - 3) + 1); // maps 0b100=2, 0b101=4, etc.
-    uint32_t pclk1 = SystemCoreClock / div;
-    return pclk1 * 2;
+uint32_t get_apb_timer_clock(TIM_TypeDef* sensor_timer) {
+	uint32_t ppre;
+	if (sensor_timer == TIM1)
+	{
+		ppre = (RCC->CFGR & RCC_CFGR_PPRE2) >> RCC_CFGR_PPRE2_Pos;
 	}
-}
+	else
+	{
+		ppre = (RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos;
+	}
 
-uint32_t get_apb2_timer_clock() {
-	uint32_t ppre2 = (RCC->CFGR & RCC_CFGR_PPRE2) >> RCC_CFGR_PPRE2_Pos;
-
-	// If APB2 prescaler > 1 ? timer clock = PCLK2 × 2
-	if (ppre2 == 0) {
-    // HCLK not divided ? PCLK2 = HCLK
+	// If APB prescaler > 1 ? timer clock = PCLK × 2
+	if (ppre == 0) {
+    // HCLK not divided ? PCLK = HCLK
     return SystemCoreClock;
 	} else {
     // Decode prescaler (bitfield values start at divide-by-2)
-    uint32_t div = 1 << ((ppre2 - 3) + 1); // maps 0b100=2, 0b101=4, etc.
-    uint32_t pclk2 = SystemCoreClock / div;
-    return pclk2 * 2;
+    uint32_t div = 1 << ((ppre - 3) + 1); // maps 0b100=2, 0b101=4, etc.
+    uint32_t pclk = SystemCoreClock / div;
+    return pclk * 2;
 	}
 }
 
@@ -34,15 +27,7 @@ float calculate_frequency(uint8_t sensor_num)
 {
 	float delta = IC_Array32[IC_ARRAY32_POS_DIFF][sensor_num];
 	TIM_TypeDef* sensor_timer = sensor_address[sensor_num]->timer;
-	uint32_t clock_speed;
-	if (sensor_timer == TIM1)
-	{
-		clock_speed = get_apb2_timer_clock();
-	}
-	else
-	{
-		clock_speed = get_apb1_timer_clock();
-	}
+	uint32_t clock_speed = get_apb_timer_clock(sensor_timer);
 	uint32_t timer_clk_hz = clock_speed / (sensor_timer->PSC + 1);
 	
 	IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] = 0;

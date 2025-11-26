@@ -51,13 +51,13 @@ volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX] = {{0}, {0}, {0}, {0}};
 volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initialize the 'initial' pos as true
 float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 
-SensorAddress* sensor_address[SENSOR_COUNT_MAX] = {
-&(SensorAddress){TIM1, 3},
-&(SensorAddress){TIM1, 4},
-&(SensorAddress){TIM2, 1},
-&(SensorAddress){TIM2, 2},
-&(SensorAddress){TIM2, 3},
-&(SensorAddress){TIM2, 4},
+SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX] = {
+&(SENSADDR_TypeDef){TIM1, 3},
+&(SENSADDR_TypeDef){TIM1, 4},
+&(SENSADDR_TypeDef){TIM2, 1},
+&(SENSADDR_TypeDef){TIM2, 2},
+&(SENSADDR_TypeDef){TIM2, 3},
+&(SENSADDR_TypeDef){TIM2, 4},
 };
 
 // MCP23008

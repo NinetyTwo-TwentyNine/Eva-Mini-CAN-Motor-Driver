@@ -1,7 +1,9 @@
 #ifndef _I2C_C_H
 #define _I2C_C_H
 
-#include "main.h"
+#include "stm32f1xx_ll_i2c.h"
+#include "stm32f1xx_ll_bus.h"
+#include "stm32f1xx_ll_gpio.h"
 
 uint8_t I2Ctransmission_initialize(I2C_TypeDef *I2Cx, uint8_t addr, uint8_t read, uint8_t restart);
 void I2Ctransmission_write(I2C_TypeDef *I2Cx, uint8_t data);

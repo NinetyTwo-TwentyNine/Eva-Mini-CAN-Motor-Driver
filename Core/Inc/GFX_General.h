@@ -1,6 +1,7 @@
 #ifndef _GGFX_H
 #define _GGFX_H
 
+#include <string.h>
 #include "main.h"
 
 #define swap(a, b) { int16_t t = a; a = b; b = t; }

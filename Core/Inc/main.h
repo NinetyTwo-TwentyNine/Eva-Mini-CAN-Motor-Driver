@@ -46,13 +46,17 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stm32f1xx_ll_can.h"
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include "stm32f1xx_ll_can.h" // Our own LL CAN driver replacement for STM32F103
 
 #include "frequency_calc_basic.h"
 #include "i2c_control.h"
 #include "GFX_SSD1306.h"
 #include "mcp23008.h"
 #include "can_parser.h"
+#include "ui_screen_system.h"
 
 /* USER CODE END Includes */
 
@@ -95,11 +99,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 // General utilities
-#include <stdlib.h>
-#include <stdbool.h>
-
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define min(a,b) ((a) < (b) ? (a) : (b))
+#define max(a,b) ((a) > (b) ? (a) : (b))
 
 extern volatile uint64_t sys_timer;
 
@@ -116,15 +117,10 @@ extern volatile uint64_t sys_timer;
 #define IC_ARRAY8_POS_CAPTURE_ERROR 2
 #define IC_ARRAY8_POS_OVERFLOW_COUNT 3
 
-typedef struct {
-	TIM_TypeDef* timer;
-	uint8_t channel;
-} SensorAddress;
-
 extern volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX];
 extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
 extern float sensor_frequency[SENSOR_COUNT_MAX];
-extern SensorAddress* sensor_address[SENSOR_COUNT_MAX];
+extern SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX];
 
 // SSD1306
 #define SCREEN_SPI SPI1

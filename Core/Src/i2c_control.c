@@ -14,10 +14,10 @@ uint8_t I2Ctransmission_initialize(I2C_TypeDef *I2Cx, uint8_t addr, uint8_t read
 		if (LL_I2C_IsActiveFlag_AF(I2Cx)) {
 			LL_I2C_ClearFlag_AF(I2Cx);
 			LL_I2C_GenerateStopCondition(I2Cx);
-			return false;
+			return 0;
 		}
     LL_I2C_ClearFlag_ADDR(I2Cx);  // Clear ADDR by reading SR1 then SR2
-		return true;
+		return 1;
 }
 
 void I2Ctransmission_write(I2C_TypeDef *I2Cx, uint8_t data) {

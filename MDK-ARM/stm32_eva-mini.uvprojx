@@ -511,7 +511,7 @@
             <File>
               <FileName>ui_screen_system.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\ui_screen_system.h</FilePath>
+              <FilePath>..\Core\Inc\ui_screen_system.h</FilePath>
             </File>
             <File>
               <FileName>can_parser.c</FileName>
@@ -546,7 +546,7 @@
             <File>
               <FileName>ui_screen_system.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\ui_screen_system.c</FilePath>
+              <FilePath>..\Core\Src\ui_screen_system.c</FilePath>
             </File>
           </Files>
         </Group>
