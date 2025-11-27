@@ -234,7 +234,7 @@ int main(void)
 						gfx_setTextColor(WHITE, WHITE);
 						gfx_setCursor(0,0);
 
-						for (uint16_t i=0; i < 168; i++) {
+						for (uint16_t i=148; i < 294; i++) {
 							if (i == '\n') continue;
 							gfx_write(i);
 							if ((i > 0) && (i % 21 == 0))

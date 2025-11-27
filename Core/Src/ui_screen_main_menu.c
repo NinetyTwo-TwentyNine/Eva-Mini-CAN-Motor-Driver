@@ -24,13 +24,13 @@ void UI_BuildMainMenu(UI_Screen* screen)
 {
 	ui_clearElements(screen);
 
-	char* labels[4] = { "Item 1", "Item 2", "Item 3", "Item 4" };
+	char* labels[4] = { "АА 1", "Item 2", "Item 3", "Item 4" };
 	const uint8_t ypos[4] = { 4, 20, 36, 52 };
 
   for (uint8_t i = 0; i < 4; i++)
   {
     // ---------------- Visual ----------------
-		char* label = labels[i];
+		char* label = utf8rus(labels[i]);
     UI_Element_Visual* vis = ui_addText(
         screen,
         40,                 // pos_x

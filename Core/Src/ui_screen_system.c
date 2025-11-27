@@ -51,6 +51,9 @@ UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t c
     if (!e)
         return NULL;
 
+		if (e->data.text.text) { // TODO: Maybe handle it better
+			free(e->data.text.text);
+		}
     e->data.text.text = text;
     e->data.text.font = font;
 
