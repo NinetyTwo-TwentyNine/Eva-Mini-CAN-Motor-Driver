@@ -57,6 +57,7 @@ extern "C" {
 #include "mcp23008.h"
 #include "can_parser.h"
 #include "ui_screen_system.h"
+#include "ui_screen_main_menu.h"
 
 /* USER CODE END Includes */
 
@@ -161,7 +162,12 @@ extern uint8_t can_last_send_success;
 extern uint64_t can_last_send_time;
 
 // UI
-extern uint8_t main_text_size;
+#define UI_UPDATE_MAX_FREQUENCY 50
+#define UI_MAIN_TEXT_SIZE 1
+#define UI_MAIN_COLOR_INVERTED 1
+extern UI_Screen main_screen;
+extern uint64_t ui_last_update_time;
+extern uint8_t ui_update_required, main_ui_on;
 
 /* USER CODE END Private defines */
 

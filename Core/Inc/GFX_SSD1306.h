@@ -123,16 +123,16 @@ extern int8_t _i2caddr, _vccstate;
   void ssd1306_command(uint8_t c);
   void ssd1306_data(uint8_t c);
 
-  void clearDisplay(void);
-  void invertDisplay(uint8_t i);
+  void gfx_clearBuffer(void);
+  void display_invert(uint8_t i);
   void display_update(void);
 
-  void dim(uint8_t dim);
+  void gfx_dim(uint8_t dim);
 
-  void drawPixel(int16_t x, int16_t y, uint16_t color);
+  void gfx_drawPixel(int16_t x, int16_t y, uint16_t color);
 
-  void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
-  void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+  void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+  void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
 
 	void shiftOut(GPIO_TypeDef * dataPort, uint32_t dataPin, GPIO_TypeDef * clockPort, uint32_t clockPin, uint8_t bitOrder, uint8_t val);
   void fastSPIwrite(uint8_t c);
@@ -140,9 +140,9 @@ extern int8_t _i2caddr, _vccstate;
 	void I2Cwrite_data(uint8_t data);
 	void I2Cwrite_finish(void);
 
-  inline void drawFastVLineInternal(int16_t x, int16_t y, int16_t h, uint16_t color) __attribute__((always_inline));
-  inline void drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) __attribute__((always_inline));
+  inline void gfx_drawFastVLineInternal(int16_t x, int16_t y, int16_t h, uint16_t color) __attribute__((always_inline));
+  inline void gfx_drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) __attribute__((always_inline));
 	
-	void buildUIScreen(UI_Screen* screen);
+	void display_buildUIScreen(UI_Screen* screen);
 
 #endif // _GFX_SSD1306_H

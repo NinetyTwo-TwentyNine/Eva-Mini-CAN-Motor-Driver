@@ -81,12 +81,12 @@ static uint8_t buffer[SSD1306_LCDHEIGHT * SSD1306_LCDWIDTH / 8] = {
 
 
 // the most basic function, set a single pixel
-void drawPixel(int16_t x, int16_t y, uint16_t color) {
+void gfx_drawPixel(int16_t x, int16_t y, uint16_t color) {
   if ((x < 0) || (x >= display_width()) || (y < 0) || (y >= display_height()))
     return;
 
   // check rotation, move pixel around if necessary
-  switch (getRotation()) {
+  switch (gfx_getRotation()) {
   case 1:
     swap(x, y);
     x = SCREEN_WIDTH - x - 1;
@@ -345,7 +345,7 @@ void ssd1306_begin_default() {
 	ssd1306_begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS);
 }
 
-void invertDisplay(uint8_t i) {
+void display_invert(uint8_t i) {
   if (i) {
     ssd1306_command(SSD1306_INVERTDISPLAY);
   } else {
@@ -398,7 +398,7 @@ void ssd1306_data(uint8_t c) {
 // Dim the display
 // dim = true: display is dimmed
 // dim = false: display is normal
-void dim(uint8_t dim) {
+void gfx_dim(uint8_t dim) {
   uint8_t contrast;
 
   if (dim) {
@@ -462,7 +462,7 @@ void display_update(void) {
 }
 
 // clear everything
-void clearDisplay(void) {
+void gfx_clearBuffer(void) {
   memset(buffer, 0, (SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8));
 }
 
@@ -531,7 +531,7 @@ void I2Cwrite_finish() {
 	I2Ctransmission_finish(SCREEN_I2C);
 }
 
-void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
+void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
   uint8_t bSwap = false;
   switch(_rotation) { 
     case 0:
@@ -559,13 +559,13 @@ void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
   }
 
   if(bSwap) { 
-    drawFastVLineInternal(x, y, w, color);
+    gfx_drawFastVLineInternal(x, y, w, color);
   } else { 
-    drawFastHLineInternal(x, y, w, color);
+    gfx_drawFastHLineInternal(x, y, w, color);
   }
 }
 
-void drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) {
+void gfx_drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) {
   // Do bounds/limit checks
   if(y < 0 || y >= SCREEN_HEIGHT) { return; }
 
@@ -600,7 +600,7 @@ void drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) {
   }
 }
 
-void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
+void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
   uint8_t bSwap = false;
   switch(_rotation) { 
     case 0:
@@ -627,14 +627,14 @@ void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
   }
 
   if(bSwap) { 
-    drawFastHLineInternal(x, y, h, color);
+    gfx_drawFastHLineInternal(x, y, h, color);
   } else {
-    drawFastVLineInternal(x, y, h, color);
+    gfx_drawFastVLineInternal(x, y, h, color);
   }
 }
 
 
-void drawFastVLineInternal(int16_t x, int16_t __y, int16_t __h, uint16_t color) {
+void gfx_drawFastVLineInternal(int16_t x, int16_t __y, int16_t __h, uint16_t color) {
 
   // do nothing if we're off the left or right side of the screen
   if(x < 0 || x >= SCREEN_WIDTH) { return; }
@@ -734,13 +734,13 @@ void drawFastVLineInternal(int16_t x, int16_t __y, int16_t __h, uint16_t color) 
 }
 
 // UI screen visualizer
-void buildUIScreen(UI_Screen* screen)
+void display_buildUIScreen(UI_Screen* screen)
 {
-	clearDisplay();
+	gfx_clearBuffer();
 	
 	uint8_t offset_y = 0;
 	UI_Element_Visual* curr_hovered = screen->hovered;
-	uint16_t comparison_height = (SCREEN_HEIGHT - main_text_size * 8);
+	uint16_t comparison_height = (SCREEN_HEIGHT - UI_MAIN_TEXT_SIZE * CHAR_BASE_HEIGHT / 2);
 	if (curr_hovered->pos_y > comparison_height)
 	{
 		offset_y = curr_hovered->pos_y - comparison_height;
@@ -750,22 +750,22 @@ void buildUIScreen(UI_Screen* screen)
 	{
 		UI_Element_Visual* curr_visual = &(screen->visuals[i]);
 		int16_t x0 = curr_visual->pos_x, y0 = curr_visual->pos_y - offset_y;
-		setCursor(x0, y0);
+		gfx_setCursor(x0, y0);
 		switch(curr_visual->type)
 		{
 			case VISUAL_TYPE_TEXT:
 			{
-				setTextColor(WHITE, WHITE);
-				setTextSize(curr_visual->data.text.font);
-				display_print(curr_visual->data.text.text);
+				gfx_setTextColor(WHITE, WHITE);
+				gfx_setTextSize(curr_visual->data.text.font);
+				gfx_print(curr_visual->data.text.text);
 			} break;
-			case VISUAL_TYPE_LINES: 
+			case VISUAL_TYPE_LINES:
 			{
 				uint8_t prev_pos_x = x0, prev_pos_y = y0;
 				for (uint8_t j = 0; j < curr_visual->data.lines.line_count-1; j++)
 				{
 					uint8_t new_pos_x = x0 + curr_visual->data.lines.x_n[j], new_pos_y = y0 + curr_visual->data.lines.y_n[j];
-					drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, WHITE);
+					gfx_drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, WHITE);
 					prev_pos_x = new_pos_x;
 					prev_pos_y = new_pos_y;
 				}
@@ -773,36 +773,80 @@ void buildUIScreen(UI_Screen* screen)
 			case VISUAL_TYPE_TRIANGLE:
 			{
 				uint8_t x1 = x0 + curr_visual->data.triangle.x1, y1 = y0 + curr_visual->data.triangle.y1, x2 = x0 + curr_visual->data.triangle.x2, y2 = y0 + curr_visual->data.triangle.y2;
-				drawTriangle(x0, y0, x1, y1, x2, y2, WHITE);
+				gfx_drawTriangle(x0, y0, x1, y1, x2, y2, WHITE);
 				if (!curr_visual->data.triangle.is_hollow)
 				{
-					fillTriangle(x0, y0, x1, y1, x2, y2, WHITE);
+					gfx_fillTriangle(x0, y0, x1, y1, x2, y2, WHITE);
 				}
 			}	break;
 			case VISUAL_TYPE_RECTANGLE: 
 			{
-				drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
+				gfx_drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
 				if (!curr_visual->data.rectangle.is_hollow)
 				{
-					fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
+					gfx_fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
 				}
 			}	break;
 			case VISUAL_TYPE_CIRCLE:
 			{
 				uint8_t r = curr_visual->data.circle.radius, new_x = x0 + r, new_y = y0 - r;
-				drawCircle(new_x, new_y, r, WHITE);
+				gfx_drawCircle(new_x, new_y, r, WHITE);
 				if (!curr_visual->data.circle.is_hollow)
 				{
-					fillCircle(new_x, new_y, r, WHITE);
+					gfx_fillCircle(new_x, new_y, r, WHITE);
 				}
 			}	break;
 			case VISUAL_TYPE_BITMAP:
 			{
-				drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, WHITE);
+				gfx_drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, WHITE);
 			}	break;
 		}
 	}
 	
+	if (screen->should_draw_cursor && screen->hovered != NULL && screen->hovered->type == VISUAL_TYPE_TEXT)
+	{
+		char* text_str = screen->hovered->data.text.text;
+		uint8_t text_font = screen->hovered->data.text.font;
+		
+		uint8_t cursor_left_right = screen->cursor_left_or_right, cursor_offset = screen->hovered->cursor_offset;
+		
+		uint8_t triangle_x0 = screen->hovered->pos_x, triangle_y0 = screen->hovered->pos_y + text_font * CHAR_BASE_HEIGHT / 2;
+		if (cursor_left_right == 0)
+		{
+			triangle_x0 -= cursor_offset;
+		}
+		else
+		{
+			uint8_t text_length = strlen(text_str);
+			for (uint8_t i = 0; i < text_length; i++)
+			{
+				if ( text_str[i] == '\n' || (_wrap && triangle_x0 > SCREEN_WIDTH - CHAR_BASE_WIDTH * text_font))
+				{
+					triangle_y0 += text_font * CHAR_BASE_HEIGHT;
+					triangle_x0 = 0;
+				}
+				else
+				{
+					triangle_x0 += CHAR_BASE_WIDTH;
+				}
+			}
+			triangle_x0 += cursor_offset;
+		}
+
+		uint8_t triangle_centerline = CHAR_BASE_HEIGHT * 3 / 4;
+		uint8_t triangle_x1, triangle_y1, triangle_x2, triangle_y2;
+		triangle_x1 = cursor_left_right ? (triangle_x0 + triangle_centerline) : (triangle_x0 - triangle_centerline);
+		triangle_x2 = triangle_x1;
+		triangle_y1 = triangle_y0 + triangle_centerline, triangle_y2 = triangle_y0 - triangle_centerline;
+		
+		gfx_drawTriangle(triangle_x0, triangle_y0, triangle_x1, triangle_y1, triangle_x2, triangle_y2, WHITE);
+		if (!screen->item_is_selected)
+		{
+			gfx_fillTriangle(triangle_x0, triangle_y0, triangle_x1, triangle_y1, triangle_x2, triangle_y2, WHITE);
+		}
+	}
+	
 	display_update();
+	display_invert(UI_MAIN_COLOR_INVERTED);
 }		
 

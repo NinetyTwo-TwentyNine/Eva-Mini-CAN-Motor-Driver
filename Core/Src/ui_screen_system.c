@@ -1,6 +1,6 @@
 #include "ui_screen_system.h"
 
-void clearElements(UI_Screen* screen)
+void ui_clearElements(UI_Screen* screen)
 {
 	screen->visuals_count = 0;
 	screen->interactables_count = 0;
@@ -8,7 +8,7 @@ void clearElements(UI_Screen* screen)
 	screen->hovered = NULL;
 }
 
-UI_Element_Visual* addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index)
+UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset)
 {
     if (screen->visuals_count >= 32)
         return NULL;
@@ -22,30 +22,31 @@ UI_Element_Visual* addVisualElement(UI_Screen *screen, UI_Element_Visual_Type ty
     e->pos_y = pos_y;
     e->color = color;
     e->tab_index = tab_index;
+		e->cursor_offset = cursor_offset;
     e->context = screen;
 
     return e;
 }
 
-UI_Element_Visual* addRect(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t w, uint8_t h, uint8_t is_hollow)
+UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t cursor_offset, uint8_t w, uint8_t h, uint8_t* bitmap)
 {
     UI_Element_Visual* e =
-        addVisualElement(screen, VISUAL_TYPE_RECTANGLE, x, y, color, tab_index);
+        ui_addVisualElement(screen, VISUAL_TYPE_BITMAP, x, y, color, tab_index, cursor_offset);
 
     if (!e)
         return NULL;
 
     e->data.rectangle.w = w;
     e->data.rectangle.h = h;
-    e->data.rectangle.is_hollow = is_hollow;
+		e->data.bitmap.data = bitmap;
 
     return e;
 }
 
-UI_Element_Visual* addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, char* text, uint8_t font)
+UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t cursor_offset, char* text, uint8_t font)
 {
     UI_Element_Visual *e =
-        addVisualElement(screen, VISUAL_TYPE_TEXT, x, y, color, tab_index);
+        ui_addVisualElement(screen, VISUAL_TYPE_TEXT, x, y, color, tab_index, cursor_offset);
 
     if (!e)
         return NULL;
@@ -56,7 +57,7 @@ UI_Element_Visual* addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t colo
     return e;
 }
 
-UI_Element_Interactable* bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
+UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
 {
     if (screen->interactables_count >= 32)
         return NULL;
@@ -74,7 +75,7 @@ UI_Element_Interactable* bindInteractable(UI_Screen *screen, UI_Element_Visual *
 }
 
 
-void hoverNext(UI_Screen* screen, uint8_t direction)
+void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 {
 	int16_t tabindex_prev;
 	if (screen->hovered == NULL)
@@ -169,7 +170,7 @@ void hoverNext(UI_Screen* screen, uint8_t direction)
 	screen->hovered = best;
 }
 
-void selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected)
+void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected)
 {
 	if (toggle)
 	{
@@ -178,5 +179,46 @@ void selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected)
 	else
 	{
 			screen->item_is_selected = is_selected;
+	}
+}
+
+void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interaction_type)
+{
+	switch (interaction_type)
+	{
+		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
+			if (screen->hovered != NULL && screen->item_is_selected)
+			{
+				for (uint8_t i = 0; i < screen->interactables_count; i++)
+				{
+					UI_Element_Interactable* inter = &(screen->interactables[i]);
+					if (inter->visual == screen->hovered)
+					{
+						inter->callback(screen, interaction_type, inter);
+					}
+				}
+			}
+			else
+			{
+				ui_hoverNext(screen, (interaction_type == PRESS_TYPE_UP)? 1 : 0);
+			}
+			break;
+		case PRESS_TYPE_OK:
+			if (screen->hovered != NULL)
+			{
+				for (uint8_t i = 0; i < screen->interactables_count; i++)
+				{
+					UI_Element_Interactable* inter = &(screen->interactables[i]);
+					if (inter->visual == screen->hovered)
+					{
+						inter->callback(screen, interaction_type, inter);
+					}
+				}
+			}
+			break;
+		case PRESS_TYPE_OTHER:
+			break;
+		default:
+			return;
 	}
 }

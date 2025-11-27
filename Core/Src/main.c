@@ -68,8 +68,25 @@ uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_r
 uint8_t can_last_send_success = false;
 uint64_t can_last_send_time = 0;
 
+void sendCANPackage(uint8_t speed, uint8_t fractional_part, uint8_t direction)
+{
+	uint8_t speedData[2];
+	parseMotorSpeed(direction, fractional_part, speed, speedData);
+
+	uint8_t msg[8] = {0};
+	setMotorControl(speedData, 0x01700002, msg);
+	
+	uint8_t ok = LL_CAN_Send(0x16000001, msg, true);
+	if (ok)
+	{
+		can_last_send_time = sys_timer;
+	}
+}
+
 // UI
-uint8_t main_text_size = 2;
+UI_Screen main_screen = {0};
+uint8_t main_ui_on = false, ui_update_required = false;
+uint64_t ui_last_update_time = 0;
 
 /* USER CODE END PV */
 
@@ -147,8 +164,8 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 	ssd1306_begin_default();
+	gfx_clearBuffer();
 	display_update();
-	clearDisplay();
 	
 	LL_CAN_Init(true);
 	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),10, 0));
@@ -198,45 +215,51 @@ int main(void)
 			{
 				if (mcp23_check_result_input == 0 && mcp23_check_result_output == 0)
 				{
-					uint8_t speed = 100, fractional_part = 0, direction = 0x00;
-	
-					uint8_t speedData[2];
-					parseMotorSpeed(direction, fractional_part, speed, speedData);
-
-					uint8_t msg[8] = {0};
-					setMotorControl(speedData, 0x01700002, msg);
-	
-					uint8_t ok = LL_CAN_Send(0x16000001, msg, true);
-					if (ok)
-					{
-						can_last_send_time = sys_timer;
-					}
+					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_UP);
+					ui_update_required = true;
 				}
 				else if (mcp23_check_result_input == 0 && mcp23_check_result_output == 1)
 				{
-					display_update();
-					LL_mDelay(1000);
-					
-					clearDisplay();
-					
-					setTextSize(1);
-					setTextColor(WHITE, WHITE);
-					setCursor(0,0);
-
-					for (uint8_t i=0; i < 168; i++) {
-						if (i == '\n') continue;
-						display_write(i);
-						if ((i > 0) && (i % 21 == 0))
-						{
-							display_println();
-						}
-					}
-					display_update();
-					clearDisplay();
+					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_DOWN);
+					ui_update_required = true;
 				}
 				else if (mcp23_check_result_input == 1 && mcp23_check_result_output == 1)
 				{
-					
+					if (!main_ui_on)
+					{
+						LL_mDelay(1000);
+						gfx_clearBuffer();
+						
+						gfx_setTextSize(1);
+						gfx_setTextColor(WHITE, WHITE);
+						gfx_setCursor(0,0);
+
+						for (uint16_t i=0; i < 168; i++) {
+							if (i == '\n') continue;
+							gfx_write(i);
+							if ((i > 0) && (i % 21 == 0))
+							{
+								gfx_println();
+							}
+						}
+						display_update();
+						gfx_clearBuffer();
+						
+						LL_mDelay(2000);
+						UI_BuildMainMenu(&main_screen);
+						display_buildUIScreen(&main_screen);
+					}
+					else
+					{
+						gfx_clearBuffer();
+						display_update();
+						display_invert(false);
+					}
+					main_ui_on = !main_ui_on;
+				}
+				else if (mcp23_check_result_input == 2 && mcp23_check_result_output == 1)
+				{
+					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_OK);
 				}
 				else
 				{
@@ -259,6 +282,12 @@ int main(void)
 				mcp23_check_allowed = true;
 				mcp23008_read_register(MCP23008_REG_GPIO);
 			}
+		}
+		
+		time_now = sys_timer;
+		if ( (ui_last_update_time - time_now) >= (1000 / UI_UPDATE_MAX_FREQUENCY) && ui_update_required && main_ui_on )
+		{
+			display_buildUIScreen(&main_screen);
 		}
     /* USER CODE BEGIN 3 */
   }
