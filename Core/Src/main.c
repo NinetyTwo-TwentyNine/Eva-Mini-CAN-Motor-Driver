@@ -68,21 +68,6 @@ uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_r
 uint8_t can_last_send_success = false;
 uint64_t can_last_send_time = 0;
 
-void sendCANPackage(uint8_t speed, uint8_t fractional_part, uint8_t direction)
-{
-	uint8_t speedData[2];
-	parseMotorSpeed(direction, fractional_part, speed, speedData);
-
-	uint8_t msg[8] = {0};
-	setMotorControl(speedData, 0x01700002, msg);
-	
-	uint8_t ok = LL_CAN_Send(0x16000001, msg, true);
-	if (ok)
-	{
-		can_last_send_time = sys_timer;
-	}
-}
-
 // UI
 UI_Screen main_screen = {0};
 uint8_t main_ui_on = false, ui_update_required = false;
@@ -104,6 +89,56 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void sendCANPackage(uint8_t speed, uint8_t fractional_part, uint8_t direction)
+{
+	uint8_t speedData[2];
+	parseMotorSpeed(direction, fractional_part, speed, speedData);
+
+	uint8_t msg[8] = {0};
+	setMotorControl(speedData, 0x01700002, msg);
+	
+	uint8_t ok = LL_CAN_Send(0x16000001, msg, true);
+	if (ok)
+	{
+		can_last_send_time = sys_timer;
+	}
+}
+
+void sequence_turnDisplayOn(uint8_t on)
+{
+	display_invert(false);
+	if (on)
+	{
+		LL_mDelay(1000);
+		gfx_clearBuffer();
+		
+		gfx_setTextSize(1);
+		gfx_setTextColor(WHITE, WHITE);
+		gfx_setCursor(0,0);
+
+		for (uint16_t i=148; i < 294; i++) {
+			if (i == '\n') continue;
+			gfx_write(i);
+			if ((i > 0) && (i % 21 == 0))
+			{
+				gfx_println();
+			}
+		}
+		display_update();
+		gfx_clearBuffer();
+						
+		LL_mDelay(2000);
+		UI_BuildStartMenu(&main_screen);
+		display_buildUIScreen(&main_screen);
+	}
+	else
+	{
+		gfx_clearBuffer();
+		display_update();
+	}
+	main_ui_on = on;
+}
 
 /* USER CODE END 0 */
 
@@ -164,8 +199,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 	ssd1306_begin_default();
-	gfx_clearBuffer();
-	display_update();
+	sequence_turnDisplayOn(false);
 	
 	LL_CAN_Init(true);
 	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),10, 0));
@@ -215,51 +249,22 @@ int main(void)
 			{
 				if (mcp23_check_result_input == 0 && mcp23_check_result_output == 0)
 				{
-					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_UP);
+					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_DOWN);
 					ui_update_required = true;
 				}
 				else if (mcp23_check_result_input == 0 && mcp23_check_result_output == 1)
 				{
-					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_DOWN);
+					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_UP);
 					ui_update_required = true;
-				}
-				else if (mcp23_check_result_input == 1 && mcp23_check_result_output == 1)
-				{
-					if (!main_ui_on)
-					{
-						LL_mDelay(1000);
-						gfx_clearBuffer();
-						
-						gfx_setTextSize(1);
-						gfx_setTextColor(WHITE, WHITE);
-						gfx_setCursor(0,0);
-
-						for (uint16_t i=148; i < 294; i++) {
-							if (i == '\n') continue;
-							gfx_write(i);
-							if ((i > 0) && (i % 21 == 0))
-							{
-								gfx_println();
-							}
-						}
-						display_update();
-						gfx_clearBuffer();
-						
-						LL_mDelay(2000);
-						UI_BuildMainMenu(&main_screen);
-						display_buildUIScreen(&main_screen);
-					}
-					else
-					{
-						gfx_clearBuffer();
-						display_update();
-						display_invert(false);
-					}
-					main_ui_on = !main_ui_on;
 				}
 				else if (mcp23_check_result_input == 2 && mcp23_check_result_output == 1)
 				{
 					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_OK);
+					ui_update_required = true;
+				}
+				else if (mcp23_check_result_input == 1 && mcp23_check_result_output == 1)
+				{
+					sequence_turnDisplayOn(!main_ui_on);
 				}
 				else
 				{

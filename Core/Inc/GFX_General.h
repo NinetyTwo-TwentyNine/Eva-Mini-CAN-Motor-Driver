@@ -7,8 +7,6 @@
 #define CHAR_BASE_HEIGHT 8
 #define CHAR_BASE_WIDTH 6
 
-#define swap(a, b) { int16_t t = a; a = b; b = t; }
-
 extern uint16_t _width, _height, _cursor_y, _cursor_x, _textcolor, _textbgcolor;
 extern uint8_t _rotation, _textsize, _wrap;
 

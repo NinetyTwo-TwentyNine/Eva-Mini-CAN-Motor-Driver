@@ -398,7 +398,7 @@ void ssd1306_data(uint8_t c) {
 // Dim the display
 // dim = true: display is dimmed
 // dim = false: display is normal
-void gfx_dim(uint8_t dim) {
+void display_dim(uint8_t dim) {
   uint8_t contrast;
 
   if (dim) {
@@ -738,12 +738,26 @@ void display_buildUIScreen(UI_Screen* screen)
 {
 	gfx_clearBuffer();
 	
-	uint8_t offset_y = 0;
+	uint16_t offset_y = screen->offset_y;
 	UI_Element_Visual* curr_hovered = screen->hovered;
-	uint16_t comparison_height = (SCREEN_HEIGHT - UI_MAIN_TEXT_SIZE * CHAR_BASE_HEIGHT / 2);
-	if (curr_hovered->pos_y > comparison_height)
+	if (curr_hovered != NULL)
 	{
-		offset_y = curr_hovered->pos_y - comparison_height;
+		uint8_t font_size = UI_MAIN_TEXT_SIZE;
+		if (curr_hovered->type == VISUAL_TYPE_TEXT)
+		{
+			font_size = curr_hovered->data.text.font;
+		}
+		
+		uint16_t comparison_height_down = (_height + offset_y - font_size * CHAR_BASE_HEIGHT * 3 / 2), comparison_height_up = CHAR_BASE_HEIGHT / 2;
+		if (curr_hovered->pos_y - offset_y > comparison_height_down)
+		{
+			offset_y += curr_hovered->pos_y - offset_y - comparison_height_down;
+		}
+		else if (curr_hovered->pos_y - offset_y < comparison_height_up)
+		{
+			offset_y -= curr_hovered->pos_y - offset_y - comparison_height_up;
+		}
+		screen->offset_y = offset_y;
 	}
 	
 	for (uint8_t i = 0; i < screen->visuals_count; i++)
@@ -764,6 +778,10 @@ void display_buildUIScreen(UI_Screen* screen)
 				uint8_t prev_pos_x = x0, prev_pos_y = y0;
 				for (uint8_t j = 0; j < curr_visual->data.lines.line_count-1; j++)
 				{
+					if (j >= UI_MAX_ELEMENT_COUNT)
+					{
+						break;
+					}
 					uint8_t new_pos_x = x0 + curr_visual->data.lines.x_n[j], new_pos_y = y0 + curr_visual->data.lines.y_n[j];
 					gfx_drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, WHITE);
 					prev_pos_x = new_pos_x;
@@ -803,22 +821,31 @@ void display_buildUIScreen(UI_Screen* screen)
 		}
 	}
 	
-	if (screen->should_draw_cursor && screen->hovered != NULL && screen->hovered->type == VISUAL_TYPE_TEXT)
+	// Cursor handling
+	if (screen->should_draw_cursor && curr_hovered != NULL && curr_hovered->type == VISUAL_TYPE_TEXT)
 	{
-		char* text_str = screen->hovered->data.text.text;
-		uint8_t text_font = screen->hovered->data.text.font;
+		char* text_str = curr_hovered->data.text.text;
+		uint8_t text_font = curr_hovered->data.text.font;
 		
-		uint8_t cursor_left_right = screen->cursor_left_or_right, cursor_offset = screen->hovered->cursor_offset;
+		uint8_t cursor_left_right = screen->cursor_left_or_right, cursor_offset = curr_hovered->cursor_offset;
 		
-		uint8_t triangle_x0 = screen->hovered->pos_x, triangle_y0 = screen->hovered->pos_y + text_font * CHAR_BASE_HEIGHT / 2;
+		uint8_t triangle_centerline = CHAR_BASE_HEIGHT * 3 / 4;
+		uint16_t triangle_x0 = curr_hovered->pos_x, triangle_y0 = curr_hovered->pos_y + text_font * CHAR_BASE_HEIGHT / 2 - offset_y;
 		if (cursor_left_right == 0)
 		{
-			triangle_x0 -= cursor_offset;
+			if (cursor_offset > triangle_x0)
+			{
+				triangle_x0 = triangle_centerline; // In case the cursor's out of bounds
+			}
+			else
+			{
+				triangle_x0 -= cursor_offset;
+			}
 		}
 		else
 		{
-			uint8_t text_length = strlen(text_str);
-			for (uint8_t i = 0; i < text_length; i++)
+			uint16_t text_length = strlen(text_str);
+			for (uint16_t i = 0; i < text_length; i++)
 			{
 				if ( text_str[i] == '\n' || (_wrap && triangle_x0 > SCREEN_WIDTH - CHAR_BASE_WIDTH * text_font))
 				{
@@ -830,11 +857,17 @@ void display_buildUIScreen(UI_Screen* screen)
 					triangle_x0 += CHAR_BASE_WIDTH;
 				}
 			}
-			triangle_x0 += cursor_offset;
+			if (triangle_x0 + cursor_offset + triangle_centerline > _width)
+			{
+				triangle_x0 = _width - triangle_centerline; // In case the cursor's out of bounds
+			}
+			else
+			{
+				triangle_x0 += cursor_offset;
+			}
 		}
 
-		uint8_t triangle_centerline = CHAR_BASE_HEIGHT * 3 / 4;
-		uint8_t triangle_x1, triangle_y1, triangle_x2, triangle_y2;
+		uint16_t triangle_x1, triangle_y1, triangle_x2, triangle_y2;
 		triangle_x1 = cursor_left_right ? (triangle_x0 + triangle_centerline) : (triangle_x0 - triangle_centerline);
 		triangle_x2 = triangle_x1;
 		triangle_y1 = triangle_y0 + triangle_centerline, triangle_y2 = triangle_y0 - triangle_centerline;

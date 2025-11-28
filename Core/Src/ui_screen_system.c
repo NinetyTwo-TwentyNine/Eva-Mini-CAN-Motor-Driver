@@ -2,6 +2,7 @@
 
 void ui_clearElements(UI_Screen* screen)
 {
+	screen->offset_y = 0;
 	screen->visuals_count = 0;
 	screen->interactables_count = 0;
 	screen->item_is_selected = 0;
@@ -10,13 +11,17 @@ void ui_clearElements(UI_Screen* screen)
 
 UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset)
 {
-    if (screen->visuals_count >= 32)
+    if (screen->visuals_count >= UI_MAX_ELEMENT_COUNT)
         return NULL;
 
     UI_Element_Visual *e = &screen->visuals[screen->visuals_count++];
     
+		if (e->data.text.text) { // A malloc string
+			free(e->data.text.text);
+		}
     memset(e, 0, sizeof(UI_Element_Visual));
 
+		e->id = -1;
     e->type = type;
     e->pos_x = pos_x;
     e->pos_y = pos_y;
@@ -51,9 +56,6 @@ UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t c
     if (!e)
         return NULL;
 
-		if (e->data.text.text) { // TODO: Maybe handle it better
-			free(e->data.text.text);
-		}
     e->data.text.text = text;
     e->data.text.font = font;
 
@@ -62,14 +64,14 @@ UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t c
 
 UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
 {
-    if (screen->interactables_count >= 32)
+    if (screen->interactables_count >= UI_MAX_ELEMENT_COUNT)
         return NULL;
-		screen->interactables_count++;
 		
-		UI_Element_Interactable* i = &(screen->interactables[screen->interactables_count]);
+		UI_Element_Interactable* i = &(screen->interactables[screen->interactables_count++]);
 		
 		memset(i, 0, sizeof(UI_Element_Interactable));
 		
+		i->id = -1;
     i->visual = v;
 		i->callback = callback;
 		i->context = screen;
@@ -154,7 +156,7 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 				if (ti == -1)
 					continue;
 
-				if (!direction)
+				if (direction)
 				{
 					// backward? lowest tab_index
 					if (ti < best->tab_index)

@@ -67,7 +67,7 @@ void mcp23008_matrix_check()
 	if (mcp23_check_result_input < 4 || mcp23_check_result_input > (4 + MCP23008_BUTTON_ROW_COUNT - 1))
 	{
 		mcp23_check_required = false;
-		NVIC_EnableIRQ(EXTI2_IRQn);
+		//NVIC_EnableIRQ(EXTI2_IRQn);
 		return; // check failed: couldn't find correct input pin
 	}
 	mcp23_check_result_input -= 4;
@@ -78,19 +78,22 @@ void mcp23008_matrix_check()
 	for (mcp23_check_curr_button = 0; mcp23_check_curr_button < MCP23008_BUTTON_ROW_COUNT; mcp23_check_curr_button++)
 	{
 		mcp23008_write_register(MCP23008_REG_OLAT, 1 << mcp23_check_curr_button);
-		
 		if (mcp23008_read_register(MCP23008_REG_GPIO) & (1 << (mcp23_check_result_input + 4)))
 		{
 			mcp23_check_result_output = mcp23_check_curr_button;
+			if (mcp23_check_result_success)
+			{
+				mcp23_check_result_success = false;
+				break; // Multiple outputs correspond to 1 input, matrix is unstable (or the user is just pressing multiple buttons)
+			}
 			mcp23_check_result_success = true;
-			break;
 		}
 	}
 	
 	
 	mcp23_check_required = false; // check finished
 	mcp23008_write_register(MCP23008_REG_OLAT, 0x00);
-	mcp23008_write_register(MCP23008_REG_GPINTEN, (uint8_t)MCP23008_PINS_SETUP);
+	mcp23008_write_register(MCP23008_REG_GPINTEN, MCP23008_PINS_SETUP);
 	//NVIC_EnableIRQ(EXTI2_IRQn);
 	
 	// No need for reading the GPIO register, since we've already done it in the for loop

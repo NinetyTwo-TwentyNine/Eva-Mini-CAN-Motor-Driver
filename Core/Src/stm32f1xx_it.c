@@ -314,7 +314,7 @@ void EXTI2_IRQHandler(void)
 		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_2);
     /* USER CODE BEGIN LL_EXTI_LINE_2 */
 		if (mcp23_check_allowed)
-		{
+		{	
 			mcp23_check_allowed = false;
 			mcp23_check_required = true;
 			mcp23_check_last_time = sys_timer;

@@ -56,7 +56,9 @@ extern "C" {
 #include "GFX_SSD1306.h"
 #include "mcp23008.h"
 #include "can_parser.h"
+
 #include "ui_screen_system.h"
+#include "ui_screen_start_menu.h"
 #include "ui_screen_main_menu.h"
 
 /* USER CODE END Includes */
@@ -102,6 +104,7 @@ void Error_Handler(void);
 // General utilities
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define max(a,b) ((a) > (b) ? (a) : (b))
+#define swap(a, b) { int16_t t = a; a = b; b = t; }
 
 extern volatile uint64_t sys_timer;
 
@@ -148,8 +151,8 @@ extern SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX];
 // MCP23008
 #define MCP23008_ADDR 0x27
 #define MCP23008_I2C I2C2
-#define MCP23008_BUTTON_CHECK_TIME 200
-#define MCP23008_DEBOUNCE_WAIT_TIME 40
+#define MCP23008_BUTTON_CHECK_TIME 160
+#define MCP23008_DEBOUNCE_WAIT_TIME 20
 
 #define MCP23008_BUTTON_ROW_COUNT 3
 #define MCP23008_PINS_SETUP 0x70

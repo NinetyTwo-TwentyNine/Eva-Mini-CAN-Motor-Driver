@@ -691,10 +691,18 @@ int16_t display_height(void) {
 
 char* utf8rus(char* source)
 {
-  int src_i,trg_i,k;
+  uint16_t src_i,trg_i,k;
 	
-	char* target = malloc(strlen(source) + 1); // +1 for '\0'
-	if (!target) return NULL;
+	if (!source) return NULL;
+	char* target = NULL;
+	for (uint16_t i = 0; (i < 10000 && target == NULL); i++)
+	{	
+		target = malloc(strlen(source) + 1); // +1 for '\0'
+	}
+	if (!target)
+	{
+		return NULL;
+	}
 	
   unsigned n;
 

@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define UI_MAX_ELEMENT_COUNT 32
+
 typedef enum
 {
 	VISUAL_TYPE_TEXT,
@@ -31,9 +33,10 @@ typedef struct Struct_UI_Screen UI_Screen;
 typedef void (*UI_Callback)(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element);
 
 struct Struct_UI_Element_Visual {
-	char id[4];
+	int8_t id;
+	
 	UI_Element_Visual_Type type;
-	uint8_t pos_x, pos_y;
+	uint16_t pos_x, pos_y;
 	uint8_t color;
 	
 	int8_t tab_index;
@@ -43,7 +46,7 @@ struct Struct_UI_Element_Visual {
 	
 	union {
 		struct { char *text; uint8_t font; } text;
-		struct { uint8_t x_n[32]; uint8_t y_n[32]; uint8_t line_count; } lines;
+		struct { uint8_t x_n[UI_MAX_ELEMENT_COUNT]; uint8_t y_n[UI_MAX_ELEMENT_COUNT]; uint8_t line_count; } lines;
 		struct { uint8_t x1; uint8_t y1; uint8_t x2; uint8_t y2; uint8_t is_hollow; } triangle;
 		struct { uint8_t w; uint8_t h; uint8_t is_hollow; } rectangle;
 		struct { uint8_t radius; uint8_t is_hollow; } circle;
@@ -54,7 +57,7 @@ struct Struct_UI_Element_Visual {
 };
 
 struct Struct_UI_Element_Interactable {
-	char id[4];
+	int id;
 	
 	UI_Element_Visual* visual;
 	UI_Callback callback;
@@ -63,10 +66,10 @@ struct Struct_UI_Element_Interactable {
 };
 
 struct Struct_UI_Screen {
-	UI_Element_Interactable interactables[32];
+	UI_Element_Interactable interactables[UI_MAX_ELEMENT_COUNT];
 	uint8_t interactables_count;
 	
-	UI_Element_Visual visuals[32];
+	UI_Element_Visual visuals[UI_MAX_ELEMENT_COUNT];
 	uint8_t visuals_count;
 	
 	UI_Element_Visual* hovered;
@@ -74,6 +77,7 @@ struct Struct_UI_Screen {
 	
 	uint8_t should_draw_cursor;
 	uint8_t cursor_left_or_right;
+	uint16_t offset_y;
 };
 
 

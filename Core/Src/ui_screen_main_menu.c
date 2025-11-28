@@ -24,10 +24,10 @@ void UI_BuildMainMenu(UI_Screen* screen)
 {
 	ui_clearElements(screen);
 
-	char* labels[4] = { "АА 1", "Item 2", "Item 3", "Item 4" };
-	const uint8_t ypos[4] = { 4, 20, 36, 52 };
+	char* labels[5] = { "Итем 1", "Item 2", "Item 3", "Item 4", "Item 25" };
+	const uint8_t ypos[5] = { 4, 20, 36, 52, 68 };
 
-  for (uint8_t i = 0; i < 4; i++)
+  for (uint8_t i = 0; i < 5; i++)
   {
     // ---------------- Visual ----------------
 		char* label = utf8rus(labels[i]);
@@ -42,10 +42,8 @@ void UI_BuildMainMenu(UI_Screen* screen)
         UI_MAIN_TEXT_SIZE   // font size
     );
 
-    // Optional: assign better ID
-    vis->id[0] = 'T';
-    vis->id[1] = '0' + (i + 1);
-    vis->id[2] = '\0';
+    // Optional: assign visual ID
+    vis->id = 20 + i;
 
     // ---------------- Interactable ----------------
 		UI_Element_Interactable* inter = ui_bindInteractable(
@@ -55,9 +53,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
     );
 
     // Optional: assign interactable ID
-    inter->id[0] = 'I';
-    inter->id[1] = '0' + (i + 1);
-    inter->id[2] = '\0';
+		//inter->id = -1;
   }
 
 	screen->should_draw_cursor = true;

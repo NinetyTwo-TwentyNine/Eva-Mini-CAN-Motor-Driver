@@ -123,11 +123,11 @@ extern int8_t _i2caddr, _vccstate;
   void ssd1306_command(uint8_t c);
   void ssd1306_data(uint8_t c);
 
-  void gfx_clearBuffer(void);
   void display_invert(uint8_t i);
+  void display_dim(uint8_t dim);
   void display_update(void);
 
-  void gfx_dim(uint8_t dim);
+  void gfx_clearBuffer(void);
 
   void gfx_drawPixel(int16_t x, int16_t y, uint16_t color);
 
