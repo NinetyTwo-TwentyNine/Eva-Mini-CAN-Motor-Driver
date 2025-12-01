@@ -33,16 +33,16 @@ UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type
     return e;
 }
 
-UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t cursor_offset, uint8_t w, uint8_t h, uint8_t* bitmap)
+UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t w, uint8_t h, uint8_t* bitmap)
 {
     UI_Element_Visual* e =
-        ui_addVisualElement(screen, VISUAL_TYPE_BITMAP, x, y, color, tab_index, cursor_offset);
+        ui_addVisualElement(screen, VISUAL_TYPE_BITMAP, x, y, color, -1, 0);
 
     if (!e)
         return NULL;
 
-    e->data.rectangle.w = w;
-    e->data.rectangle.h = h;
+    e->data.bitmap.w = w;
+    e->data.bitmap.h = h;
 		e->data.bitmap.data = bitmap;
 
     return e;

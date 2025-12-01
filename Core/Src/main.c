@@ -73,6 +73,31 @@ UI_Screen main_screen = {0};
 uint8_t main_ui_on = false, ui_update_required = false;
 uint64_t ui_last_update_time = 0;
 
+uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE] = {
+		0x08, 0x00,
+    0x14, 0x00,
+    0x14, 0x00,
+    0x2A, 0x00,
+    0x2A, 0x00,
+    0x49, 0x00,
+    0x41, 0x00,
+    0x88, 0x80,
+    0x80, 0x80,
+    0xFF, 0x80
+};
+
+uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE] = {
+    0x1F,
+    0x1F,
+    0x1F,
+    0x0F,
+    0x06,
+    0x68,
+    0x90,
+    0x90,
+    0x60
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -247,34 +272,31 @@ int main(void)
 			mcp23008_matrix_check();
 			if (mcp23_check_result_success)
 			{
-				if (mcp23_check_result_input == 0 && mcp23_check_result_output == 0)
+				uint8_t matrix_pos = mcp23_check_result_input * 10 + mcp23_check_result_output * 1;
+				switch(matrix_pos)
 				{
-					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_DOWN);
-					ui_update_required = true;
-				}
-				else if (mcp23_check_result_input == 0 && mcp23_check_result_output == 1)
-				{
-					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_UP);
-					ui_update_required = true;
-				}
-				else if (mcp23_check_result_input == 2 && mcp23_check_result_output == 1)
-				{
-					UI_PerformUserInteraction(&main_screen, PRESS_TYPE_OK);
-					ui_update_required = true;
-				}
-				else if (mcp23_check_result_input == 1 && mcp23_check_result_output == 1)
-				{
-					sequence_turnDisplayOn(!main_ui_on);
-				}
-				else
-				{
-					LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-					LL_mDelay(60);
-					LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
-					LL_mDelay(60);
-					LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-					LL_mDelay(60);
-					LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
+					case MATRIX_POS_BUTTON_DOWN:
+						UI_PerformUserInteraction(&main_screen, PRESS_TYPE_DOWN);
+						ui_update_required = true;
+						break;
+					case MATRIX_POS_BUTTON_UP:
+						UI_PerformUserInteraction(&main_screen, PRESS_TYPE_UP);
+						ui_update_required = true;
+						break;
+					case MATRIX_POS_BUTTON_OK:
+						UI_PerformUserInteraction(&main_screen, PRESS_TYPE_OK);
+						ui_update_required = true;
+						break;
+					case MATRIX_POS_BUTTON_POWER:
+						sequence_turnDisplayOn(!main_ui_on);
+					default:
+						LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
+						LL_mDelay(60);
+						LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
+						LL_mDelay(60);
+						LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
+						LL_mDelay(60);
+						LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
 				}
 			}
 		}
@@ -293,6 +315,7 @@ int main(void)
 		if ( (ui_last_update_time - time_now) >= (1000 / UI_UPDATE_MAX_FREQUENCY) && ui_update_required && main_ui_on )
 		{
 			display_buildUIScreen(&main_screen);
+			ui_update_required = false;
 		}
     /* USER CODE BEGIN 3 */
   }

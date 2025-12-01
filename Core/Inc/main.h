@@ -102,6 +102,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 // General utilities
+
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define swap(a, b) { int16_t t = a; a = b; b = t; }
@@ -160,6 +161,12 @@ extern SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX];
 extern uint64_t mcp23_check_last_time;
 extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_output, mcp23_check_result_input, mcp23_check_result_success;
 
+
+#define MATRIX_POS_BUTTON_DOWN 00
+#define MATRIX_POS_BUTTON_UP 01
+#define MATRIX_POS_BUTTON_OK 21
+#define MATRIX_POS_BUTTON_POWER 11
+
 // CAN
 extern uint8_t can_last_send_success;
 extern uint64_t can_last_send_time;
@@ -168,9 +175,23 @@ extern uint64_t can_last_send_time;
 #define UI_UPDATE_MAX_FREQUENCY 50
 #define UI_MAIN_TEXT_SIZE 1
 #define UI_MAIN_COLOR_INVERTED 1
+
 extern UI_Screen main_screen;
 extern uint64_t ui_last_update_time;
 extern uint8_t ui_update_required, main_ui_on;
+
+
+#define LOGO_ERROR_ALERT_SIZE 20
+#define LOGO_ERROR_ALERT_HEIGHT 10
+#define LOGO_ERROR_ALERT_WIDTH 9
+
+extern uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE];
+
+#define LOGO_SEEDER_STATE_SIZE 9
+#define LOGO_SEEDER_STATE_HEIGHT 9
+#define LOGO_SEEDER_STATE_WIDTH 8
+
+extern uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE];
 
 /* USER CODE END Private defines */
 

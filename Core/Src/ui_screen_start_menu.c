@@ -3,7 +3,7 @@
 uint8_t element_count = 4;
 char *main_menu_lbl = "Главная", *main_options_lbl = "Настройки высева", *errors_lbl = "Ошибки", *other_options_lbl = "Настройки";
 int8_t main_menu_id = 1, main_options_id = -1, errors_id = -1, other_options_id = -1;
-const uint8_t xpos[] = { 36, 16, 40, 32 };
+const uint8_t xpos[] = { 40, 16, 44, 36 };
 const uint8_t ypos[] = { 4, 20, 36, 52 };
 
 static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)

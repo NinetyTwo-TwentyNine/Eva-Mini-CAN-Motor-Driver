@@ -33,7 +33,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 		char* label = utf8rus(labels[i]);
     UI_Element_Visual* vis = ui_addText(
         screen,
-        40,                 // pos_x
+        50,                 // pos_x
         ypos[i],            // pos_y
 				WHITE,							// color
 			  i + 1,              // tab index
@@ -55,6 +55,27 @@ void UI_BuildMainMenu(UI_Screen* screen)
     // Optional: assign interactable ID
 		//inter->id = -1;
   }
+	
+  UI_Element_Visual* vis = ui_addBitmap(
+      screen,
+      20,                 // pos_x
+      36,            			// pos_y
+			WHITE,							// color
+      LOGO_SEEDER_STATE_WIDTH, 	// width
+			LOGO_SEEDER_STATE_HEIGHT,	// height
+			logo_seeder_state		// bitmap
+  );
+	
+	vis = ui_addBitmap(
+      screen,
+      20,                 // pos_x
+      52,            			// pos_y
+			WHITE,							// color
+      LOGO_ERROR_ALERT_WIDTH, 	// width
+			LOGO_ERROR_ALERT_HEIGHT,	// height
+			logo_error_alert		// bitmap
+  );
+	
 
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;

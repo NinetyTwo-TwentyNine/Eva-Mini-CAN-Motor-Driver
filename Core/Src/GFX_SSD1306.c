@@ -749,14 +749,14 @@ void display_buildUIScreen(UI_Screen* screen)
 		}
 		
 		uint16_t comparison_height_down = (_height + offset_y - font_size * CHAR_BASE_HEIGHT * 3 / 2), comparison_height_up = CHAR_BASE_HEIGHT / 2;
-		if (curr_hovered->pos_y - offset_y > comparison_height_down)
+		if ((int16_t)curr_hovered->pos_y - (int16_t)offset_y > comparison_height_down)
 		{
-			offset_y += curr_hovered->pos_y - offset_y - comparison_height_down;
+			offset_y += (int16_t)curr_hovered->pos_y - (int16_t)offset_y - (int16_t)comparison_height_down;
 		}
-		else if (curr_hovered->pos_y - offset_y < comparison_height_up)
+		else if ((int16_t)curr_hovered->pos_y - (int16_t)offset_y < comparison_height_up)
 		{
-			offset_y -= curr_hovered->pos_y - offset_y - comparison_height_up;
-		}
+			offset_y -= (int16_t)offset_y - (int16_t)curr_hovered->pos_y + (int16_t)comparison_height_up;
+		} 
 		screen->offset_y = offset_y;
 	}
 	
@@ -830,7 +830,7 @@ void display_buildUIScreen(UI_Screen* screen)
 		uint8_t cursor_left_right = screen->cursor_left_or_right, cursor_offset = curr_hovered->cursor_offset;
 		
 		uint8_t triangle_centerline = CHAR_BASE_HEIGHT * 3 / 4;
-		uint16_t triangle_x0 = curr_hovered->pos_x, triangle_y0 = curr_hovered->pos_y + text_font * CHAR_BASE_HEIGHT / 2 - offset_y;
+		uint16_t triangle_x0 = curr_hovered->pos_x, triangle_y0 = curr_hovered->pos_y + (text_font * CHAR_BASE_HEIGHT / 2 - 1) - offset_y;
 		if (cursor_left_right == 0)
 		{
 			if (cursor_offset > triangle_x0)
