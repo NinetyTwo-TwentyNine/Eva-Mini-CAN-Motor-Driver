@@ -124,8 +124,17 @@ extern volatile uint64_t sys_timer;
 
 extern volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX];
 extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
-extern float sensor_frequency[SENSOR_COUNT_MAX];
+
+
+#define SENSADDR_POS_FAN 0
+#define SENSADDR_POS_MOTOR 1
+#define SENSADDR_POS_SPEED 2
+#define SENSADDR_POS_SEEDER 3
+#define SENSADDR_POS_BUNKER 4
+
 extern SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX];
+extern float sensor_frequency[SENSOR_COUNT_MAX];
+extern uint64_t sensor_last_check_time[SENSOR_COUNT_MAX];
 
 // SSD1306
 #define SCREEN_SPI SPI1
@@ -164,6 +173,7 @@ extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_out
 
 #define MATRIX_POS_BUTTON_DOWN 00
 #define MATRIX_POS_BUTTON_UP 01
+#define MATRIX_POS_BUTTON_MENU 20
 #define MATRIX_POS_BUTTON_OK 21
 #define MATRIX_POS_BUTTON_POWER 11
 
@@ -171,7 +181,7 @@ extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_out
 extern uint8_t can_last_send_success;
 extern uint64_t can_last_send_time;
 
-// UI
+// UI/Logic
 #define UI_UPDATE_MAX_FREQUENCY 50
 #define UI_MAIN_TEXT_SIZE 1
 #define UI_MAIN_COLOR_INVERTED 1
@@ -180,17 +190,29 @@ extern UI_Screen main_screen;
 extern uint64_t ui_last_update_time;
 extern uint8_t ui_update_required, main_ui_on;
 
+extern uint8_t switch_to_start_menu_allowed, can_procedure_in_progress, main_functionality_active;
 
+
+#define ERROR_COUNT_TOTAL 5
+#define ERROR_TYPE_FAN 0
+#define ERROR_TYPE_MOTOR 1
+#define ERROR_TYPE_CAN 2
+#define ERROR_TYPE_SPEED 3
+#define ERROR_TYPE_QUOTA 4
+
+extern uint8_t error_active[ERROR_COUNT_TOTAL];
+extern uint64_t error_last_activated[ERROR_COUNT_TOTAL];
+
+// Resources
 #define LOGO_ERROR_ALERT_SIZE 20
 #define LOGO_ERROR_ALERT_HEIGHT 10
 #define LOGO_ERROR_ALERT_WIDTH 9
-
-extern uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE];
 
 #define LOGO_SEEDER_STATE_SIZE 9
 #define LOGO_SEEDER_STATE_HEIGHT 9
 #define LOGO_SEEDER_STATE_WIDTH 8
 
+extern uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE];
 extern uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE];
 
 /* USER CODE END Private defines */

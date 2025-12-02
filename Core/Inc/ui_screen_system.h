@@ -20,9 +20,9 @@ typedef enum
 
 typedef enum
 {
-	PRESS_TYPE_OK,
 	PRESS_TYPE_UP,
 	PRESS_TYPE_DOWN,
+	PRESS_TYPE_OK,
 	PRESS_TYPE_OTHER
 } UI_Element_Press_Type;
 
@@ -31,6 +31,7 @@ typedef struct Struct_UI_Element_Interactable UI_Element_Interactable;
 typedef struct Struct_UI_Screen UI_Screen;
 
 typedef void (*UI_Callback)(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element);
+typedef void (*UI_Callback_General)(UI_Screen* screen);
 
 struct Struct_UI_Element_Visual {
 	int8_t id;
@@ -78,6 +79,8 @@ struct Struct_UI_Screen {
 	uint8_t should_draw_cursor;
 	uint8_t cursor_left_or_right;
 	uint16_t offset_y;
+	
+	UI_Callback_General screen_callback;
 };
 
 

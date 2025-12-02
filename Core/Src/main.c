@@ -43,14 +43,16 @@
 
 /* USER CODE BEGIN PV */
 
+// General utilities
 volatile uint64_t sys_timer = 0;
 uint64_t time_now = 0;
 
 // Frequency calculation
 volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX] = {{0}, {0}, {0}, {0}};
 volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initialize the 'initial' pos (IC_ARRAY8_POS_CAPTURE_INITIAL) as true
-float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 
+float sensor_frequency[SENSOR_COUNT_MAX] = {0};
+uint64_t sensor_last_check_time[SENSOR_COUNT_MAX] = {0};
 SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX] = {
 &(SENSADDR_TypeDef){TIM1, 3},
 &(SENSADDR_TypeDef){TIM1, 4},
@@ -68,34 +70,40 @@ uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_r
 uint8_t can_last_send_success = false;
 uint64_t can_last_send_time = 0;
 
-// UI
+// UI/Logic
 UI_Screen main_screen = {0};
 uint8_t main_ui_on = false, ui_update_required = false;
 uint64_t ui_last_update_time = 0;
 
+uint8_t switch_to_start_menu_allowed = false, can_procedure_in_progress = false, main_functionality_active = false;
+
+uint8_t error_active[ERROR_COUNT_TOTAL] = {0};
+uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0};
+
+// Resources
 uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE] = {
-		0x08, 0x00,
-    0x14, 0x00,
-    0x14, 0x00,
-    0x2A, 0x00,
-    0x2A, 0x00,
-    0x49, 0x00,
-    0x41, 0x00,
-    0x88, 0x80,
-    0x80, 0x80,
-    0xFF, 0x80
+	0x08, 0x00,
+  0x14, 0x00,
+  0x14, 0x00,
+  0x2A, 0x00,
+  0x2A, 0x00,
+  0x49, 0x00,
+  0x41, 0x00,
+  0x88, 0x80,
+  0x80, 0x80,
+  0xFF, 0x80
 };
 
 uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE] = {
-    0x1F,
-    0x1F,
-    0x1F,
-    0x0F,
-    0x06,
-    0x68,
-    0x90,
-    0x90,
-    0x60
+	0x1F,
+  0x1F,
+  0x1F,
+  0x0F,
+  0x06,
+  0x68,
+  0x90,
+  0x90,
+  0x60
 };
 
 /* USER CODE END PV */
@@ -156,11 +164,14 @@ void sequence_turnDisplayOn(uint8_t on)
 		LL_mDelay(2000);
 		UI_BuildStartMenu(&main_screen);
 		display_buildUIScreen(&main_screen);
+		
+		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn on the sensors
 	}
 	else
 	{
 		gfx_clearBuffer();
 		display_update();
+		LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn off the sensors
 	}
 	main_ui_on = on;
 }
@@ -205,11 +216,15 @@ int main(void)
 	LL_Init1msTick(SystemCoreClock);
 	LL_SYSTICK_EnableIT();
 	
-	LL_TIM_EnableIT_CC1(TIM1); // Enable capture/compare interrupt
+	LL_TIM_EnableIT_CC3(TIM1); // Enable capture/compare interrupt
+	LL_TIM_EnableIT_CC4(TIM1); 
   LL_TIM_EnableIT_UPDATE(TIM1); // Enable update (overflow) interrupt
   LL_TIM_EnableCounter(TIM1); // Enable counter
 	
 	LL_TIM_EnableIT_CC1(TIM2); // Enable capture/compare interrupt
+	LL_TIM_EnableIT_CC2(TIM2);
+	LL_TIM_EnableIT_CC3(TIM2);
+	LL_TIM_EnableIT_CC4(TIM2);
   LL_TIM_EnableIT_UPDATE(TIM2); // Enable update (overflow) interrupt
   LL_TIM_EnableCounter(TIM2); // Enable counter
 	
@@ -222,6 +237,7 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+	
   /* USER CODE BEGIN 2 */
 	ssd1306_begin_default();
 	sequence_turnDisplayOn(false);
@@ -260,10 +276,14 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-		uint8_t sensor_num = 1;
-		if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
+		for (uint8_t sensor_num = 0; sensor_num < SENSOR_COUNT_MAX; sensor_num++)
 		{
-			float frequency = calculate_frequency(sensor_num);
+			if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
+			{
+				sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
+				time_now = sys_timer;
+				sensor_last_check_time[sensor_num] = time_now;
+			}
 		}
 		
 		time_now = sys_timer;
@@ -286,6 +306,13 @@ int main(void)
 					case MATRIX_POS_BUTTON_OK:
 						UI_PerformUserInteraction(&main_screen, PRESS_TYPE_OK);
 						ui_update_required = true;
+						break;
+					case MATRIX_POS_BUTTON_MENU:
+						if (switch_to_start_menu_allowed)
+						{
+							UI_BuildStartMenu(&main_screen);
+							display_buildUIScreen(&main_screen);
+						}
 						break;
 					case MATRIX_POS_BUTTON_POWER:
 						sequence_turnDisplayOn(!main_ui_on);

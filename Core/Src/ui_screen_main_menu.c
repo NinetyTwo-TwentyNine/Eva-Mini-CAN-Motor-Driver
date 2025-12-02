@@ -1,86 +1,130 @@
 #include <ui_screen_main_menu.h>
 
-static void MainMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
-{
-	switch(press_type)
-	{
-		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
-			if (screen->item_is_selected)
-			{
-				// Handle action
-			}
-			break;
-		case PRESS_TYPE_OK:
-			ui_selectItem(screen, 1, 0); // Toggle
-			break;
-		case PRESS_TYPE_OTHER:
-			break;
-		default: return;
-	}
-}
+static uint8_t element_text_count = 4;
+static char *norm_text_lbl = "Норма:", *fan_text_lbl = "В:", *motor_text_lbl = "М:", *area_text_lbl = "S:";
+static const uint8_t text_xpos[] = { 4, 4, 4, 80 };
+static const uint8_t text_ypos[] = { 20, 36, 52, 52 };
+
+static uint8_t element_type_count = 4;
+static char *norm_type_lbl = "кг/га", *fan_type_lbl = "об/мин", *motor_type_lbl = "об/мин", *area_type_lbl = "га";
+static const uint8_t type_xpos[] = { 94, 44, 36, 112 };
+static const uint8_t type_ypos[] = { 20, 36, 52, 52 };
+
+static uint8_t element_val_count = 4;
+static int8_t norm_val_id = 1, fan_val_id = 2, motor_val_id = 3, area_val_id = 4;
+static char *norm_val_lbl = "000(000)", *fan_val_lbl = "0000", *motor_val_lbl = "000", *area_val_lbl = "000";
+static const uint8_t val_xpos[] = { 42, 16, 16, 92 };
+static const uint8_t val_ypos[] = { 20, 36, 52, 52 };
+
+static uint8_t element_icon_count = 2;
+static int8_t error_icon_id = 5, error_val_id = 6, seeder_icon_id = 7, seeder_val_id = 8;
+static const uint8_t icon_xpos[] = { 4, 105, 16, 115 };
+static const uint8_t icon_ypos[] = { 4, 36, 4, 36 };
 
 
 void UI_BuildMainMenu(UI_Screen* screen)
 {
 	ui_clearElements(screen);
 
-	char* labels[5] = { "Итем 1", "Item 2", "Item 3", "Item 4", "Item 25" };
-	const uint8_t ypos[5] = { 4, 20, 36, 52, 68 };
+	char* texts[] = { norm_text_lbl, fan_text_lbl, motor_text_lbl, area_text_lbl };
+	char* types[] = { norm_type_lbl, fan_type_lbl, motor_type_lbl, area_type_lbl };
+	char* val_defaults[] = { norm_val_lbl, fan_val_lbl, motor_val_lbl, area_val_lbl };
+	
+	int8_t val_ids[] = { norm_val_id, fan_val_id, motor_val_id, area_val_id };
+	int8_t icon_ids[] = { error_icon_id, seeder_icon_id, error_val_id, seeder_val_id };
 
-  for (uint8_t i = 0; i < 5; i++)
+  for (uint8_t i = 0; i < element_text_count; i++)
   {
-    // ---------------- Visual ----------------
-		char* label = utf8rus(labels[i]);
-    UI_Element_Visual* vis = ui_addText(
+    // ---------------- Visual (Text) ----------------
+		char* text_lbl = utf8rus(texts[i]);
+    UI_Element_Visual* text_elem = ui_addText(
         screen,
-        50,                 // pos_x
-        ypos[i],            // pos_y
+        text_xpos[i],            // pos_x
+        text_ypos[i],            // pos_y
 				WHITE,							// color
-			  i + 1,              // tab index
+			  -1,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  label,          		// text
+			  text_lbl,          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
     // Optional: assign visual ID
-    vis->id = 20 + i;
+    text_elem->id = -1;
+	}
 
-    // ---------------- Interactable ----------------
-		UI_Element_Interactable* inter = ui_bindInteractable(
-			screen,
-      vis,
-      MainMenu_OnItemPressed
+  for (uint8_t i = 0; i < element_type_count; i++)
+  {
+    // ---------------- Visual (Type) ----------------
+		char* type_lbl = utf8rus(types[i]);
+    UI_Element_Visual* type_elem = ui_addText(
+        screen,
+        type_xpos[i],            // pos_x
+        type_ypos[i],            // pos_y
+				WHITE,							// color
+			  -1,              // tab index
+				CHAR_BASE_WIDTH*3,  // cursor offset
+			  type_lbl,          		// text
+        UI_MAIN_TEXT_SIZE   // font size
     );
 
-    // Optional: assign interactable ID
-		//inter->id = -1;
+    // Optional: assign visual ID
+    type_elem->id = -1;
+	}
+	
+	for (uint8_t i = 0; i < element_val_count; i++)
+	{
+    // ---------------- Visual (Value) ----------------
+		char* val_lbl = utf8rus(val_defaults[i]);
+    UI_Element_Visual* val_elem = ui_addText(
+        screen,
+        val_xpos[i],            // pos_x
+        val_ypos[i],            // pos_y
+				WHITE,							// color
+			  -1,              // tab index
+				CHAR_BASE_WIDTH*3,  // cursor offset
+			  val_lbl,          		// text
+        UI_MAIN_TEXT_SIZE   // font size
+    );
+
+    // Optional: assign visual ID
+    val_elem->id = val_ids[i];
   }
 	
-  UI_Element_Visual* vis = ui_addBitmap(
-      screen,
-      20,                 // pos_x
-      36,            			// pos_y
-			WHITE,							// color
-      LOGO_SEEDER_STATE_WIDTH, 	// width
-			LOGO_SEEDER_STATE_HEIGHT,	// height
-			logo_seeder_state		// bitmap
-  );
 	
-	vis = ui_addBitmap(
+	for (uint8_t i = 0; i < element_icon_count; i++)
+	{
+		uint8_t* bitmap_data = (i % 2 == 0)? logo_error_alert : logo_seeder_state;
+		uint8_t bitmap_width = (i % 2 == 0)? LOGO_ERROR_ALERT_WIDTH : LOGO_SEEDER_STATE_WIDTH;
+		uint8_t bitmap_height = (i % 2 == 0)? LOGO_ERROR_ALERT_HEIGHT : LOGO_SEEDER_STATE_HEIGHT;
+		
+		UI_Element_Visual* icon_elem = ui_addBitmap(
       screen,
-      20,                 // pos_x
-      52,            			// pos_y
+      icon_xpos[i],                 // pos_x
+      icon_ypos[i],            			// pos_y
 			WHITE,							// color
-      LOGO_ERROR_ALERT_WIDTH, 	// width
-			LOGO_ERROR_ALERT_HEIGHT,	// height
-			logo_error_alert		// bitmap
-  );
-	
+      bitmap_width, 	// width
+			bitmap_height,	// height
+			bitmap_data		// bitmap
+		);
+		icon_elem->id = icon_ids[i];
 
-	screen->should_draw_cursor = true;
-	screen->cursor_left_or_right = 1;
+		char* icon_val_lbl = (i % 2 == 0)? utf8rus("Бункер пуст") : utf8rus("Т");
+		UI_Element_Visual* val_elem = ui_addText(
+      screen,
+      icon_xpos[i+element_icon_count],            // pos_x
+      icon_ypos[i+element_icon_count],            // pos_y
+			WHITE,							// color
+			-1,              // tab index
+			CHAR_BASE_WIDTH*3,  // cursor offset
+			icon_val_lbl,          		// text
+      UI_MAIN_TEXT_SIZE   // font size
+		);
+		val_elem->id = icon_ids[i + element_icon_count];
+	}
 	
-  // Default hover index
-  if (screen->visuals_count > 0)
-    screen->hovered = &screen->visuals[0];
+	screen->should_draw_cursor = false;
+  // Default hover index: None
+	
+	
+	switch_to_start_menu_allowed = true;
 }

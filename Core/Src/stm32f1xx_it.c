@@ -269,10 +269,34 @@ void TIM2_IRQHandler(void)
 void TIM3_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM3_IRQn 0 */
-
+	if (LL_TIM_IsActiveFlag_UPDATE(TIM3)) {
+    LL_TIM_ClearFlag_UPDATE(TIM3);
+	  for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
+		{
+			if (sensor_address[i]->timer == TIM3)
+			{
+				IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][i]++;
+			}
+		}
+	}
   /* USER CODE END TIM3_IRQn 0 */
   /* USER CODE BEGIN TIM3_IRQn 1 */
-
+	if (LL_TIM_IsActiveFlag_CC1(TIM3)) {
+      LL_TIM_ClearFlag_CC1(TIM3);
+			capture_value(TIM3, 1);
+	}
+	if (LL_TIM_IsActiveFlag_CC2(TIM3)) {
+      LL_TIM_ClearFlag_CC2(TIM3);
+			capture_value(TIM3, 2);
+	}
+	if (LL_TIM_IsActiveFlag_CC3(TIM3)) {
+      LL_TIM_ClearFlag_CC3(TIM3);
+			capture_value(TIM3, 3);
+	}
+	if (LL_TIM_IsActiveFlag_CC4(TIM3)) {
+      LL_TIM_ClearFlag_CC4(TIM3);
+			capture_value(TIM3, 4);
+	}
   /* USER CODE END TIM3_IRQn 1 */
 }
 

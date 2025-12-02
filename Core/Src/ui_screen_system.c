@@ -208,7 +208,7 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 				ui_hoverNext(screen, (interaction_type == PRESS_TYPE_UP)? 1 : 0);
 			}
 			break;
-		case PRESS_TYPE_OK:
+		case PRESS_TYPE_OK: case PRESS_TYPE_OTHER:
 			if (screen->hovered != NULL)
 			{
 				for (uint8_t i = 0; i < screen->interactables_count; i++)
@@ -220,8 +220,6 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 					}
 				}
 			}
-			break;
-		case PRESS_TYPE_OTHER:
 			break;
 		default:
 			return;
