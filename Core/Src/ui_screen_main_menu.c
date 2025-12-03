@@ -10,16 +10,16 @@ static char *norm_type_lbl = "кг/га", *fan_type_lbl = "об/мин", *motor_
 static const uint8_t type_xpos[] = { 94, 44, 36, 112 };
 static const uint8_t type_ypos[] = { 20, 36, 52, 52 };
 
-static uint8_t element_val_count = 4;
-static int8_t norm_val_id = 1, fan_val_id = 2, motor_val_id = 3, area_val_id = 4;
-static char *norm_val_lbl = "000(000)", *fan_val_lbl = "0000", *motor_val_lbl = "000", *area_val_lbl = "000";
-static const uint8_t val_xpos[] = { 42, 16, 16, 92 };
-static const uint8_t val_ypos[] = { 20, 36, 52, 52 };
+static uint8_t element_val_count = 6;
+static int8_t norm_val_id = 1, fan_val_id = 2, motor_val_id = 3, area_val_id = 4, error_val_id = 5, seeder_val_id = 6;
+static char *norm_val_lbl = "000(000)", *fan_val_lbl = "0000", *motor_val_lbl = "000", *area_val_lbl = "000", *error_val_lbl = "Бункер пуст", *seeder_val_lbl = "Т";
+static const uint8_t val_xpos[] = { 42, 16, 16, 92, 16, 115 };
+static const uint8_t val_ypos[] = { 20, 36, 52, 52, 4, 36 };
 
 static uint8_t element_icon_count = 2;
-static int8_t error_icon_id = 5, seeder_icon_id = 6, error_val_id = 7, seeder_val_id = 8;
-static const uint8_t icon_xpos[] = { 4, 105, 16, 115 };
-static const uint8_t icon_ypos[] = { 4, 36, 4, 36 };
+static int8_t error_icon_id = 7, seeder_icon_id = 8;
+static const uint8_t icon_xpos[] = { 4, 105 };
+static const uint8_t icon_ypos[] = { 4, 36 };
 
 
 void UI_BuildMainMenu(UI_Screen* screen)
@@ -28,7 +28,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 
 	char* texts[] = { norm_text_lbl, fan_text_lbl, motor_text_lbl, area_text_lbl };
 	char* types[] = { norm_type_lbl, fan_type_lbl, motor_type_lbl, area_type_lbl };
-	char* val_defaults[] = { norm_val_lbl, fan_val_lbl, motor_val_lbl, area_val_lbl };
+	char* val_defaults[] = { norm_val_lbl, fan_val_lbl, motor_val_lbl, area_val_lbl, error_val_lbl, seeder_val_lbl };
 	
 	int8_t val_ids[] = { norm_val_id, fan_val_id, motor_val_id, area_val_id };
 	int8_t icon_ids[] = { error_icon_id, seeder_icon_id, error_val_id, seeder_val_id };
@@ -104,18 +104,6 @@ void UI_BuildMainMenu(UI_Screen* screen)
 			bitmap_data		// bitmap
 		);
 		icon_elem->id = icon_ids[i];
-
-		UI_Element_Visual* val_elem = ui_addText(
-      screen,
-      icon_xpos[i+element_icon_count],            // pos_x
-      icon_ypos[i+element_icon_count],            // pos_y
-			WHITE,							// color
-			-1,              // tab index
-			CHAR_BASE_WIDTH*3,  // cursor offset
-			((i % 2 == 0)? "Бункер пуст" : "Т"),          		// text
-      UI_MAIN_TEXT_SIZE   // font size
-		);
-		val_elem->id = icon_ids[i + element_icon_count];
 	}
 	
 	screen->should_draw_cursor = false;

@@ -73,12 +73,14 @@ uint64_t can_last_send_time = 0;
 // UI/Logic
 UI_Screen main_screen = {0};
 uint8_t main_ui_on = false, ui_update_required = false;
-uint64_t ui_last_update_time = 0;
+uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 
 uint8_t switch_to_start_menu_allowed = false, can_procedure_in_progress = false, main_functionality_active = false;
 
-uint8_t error_active[ERROR_COUNT_TOTAL] = {0};
-uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0};
+uint32_t user_fan_speed_min = 0, user_fan_speed_max = 0, user_wheel_diameter = 0, user_wheel_pulses = 0, user_quota = 0, user_mass_per_turn = 0;
+
+uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}};
+uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start[ERROR_COUNT_TOTAL] = {0};
 
 // Resources
 uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE] = {
@@ -279,14 +281,19 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		for (uint8_t sensor_num = 0; sensor_num < SENSOR_COUNT_MAX; sensor_num++)
+		if (main_functionality_active && user_fan_speed_min != 0 && user_fan_speed_max != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0 && user_quota != 0 && user_mass_per_turn != 0)
 		{
-			if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
+			for (uint8_t sensor_num = 0; sensor_num < SENSOR_COUNT_MAX; sensor_num++)
 			{
-				sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
-				time_now = sys_timer;
-				sensor_last_check_time[sensor_num] = time_now;
+				if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
+				{
+					sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
+					time_now = sys_timer;
+					sensor_last_check_time[sensor_num] = time_now;
+				}
 			}
+			
+			// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
 		}
 		
 		time_now = sys_timer;

@@ -80,7 +80,8 @@ struct Struct_UI_Screen {
 	uint8_t cursor_left_or_right;
 	uint16_t offset_y;
 	
-	//UI_Callback_General screen_callback;
+	UI_Callback_General screen_callback;
+	uint16_t callback_interval;
 };
 
 

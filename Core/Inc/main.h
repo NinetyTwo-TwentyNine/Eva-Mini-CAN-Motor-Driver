@@ -60,6 +60,9 @@ extern "C" {
 #include "ui_screen_system.h"
 #include "ui_screen_start_menu.h"
 #include "ui_screen_main_menu.h"
+#include "ui_screen_seeder_options_menu.h"
+#include "ui_screen_errors_menu.h"
+#include "ui_screen_other_options_menu.h"
 
 /* USER CODE END Includes */
 
@@ -187,21 +190,33 @@ extern uint64_t can_last_send_time;
 #define UI_MAIN_COLOR_INVERTED 1
 
 extern UI_Screen main_screen;
-extern uint64_t ui_last_update_time;
+extern uint64_t ui_last_update_time, ui_last_callback_time;
 extern uint8_t ui_update_required, main_ui_on;
 
 extern uint8_t switch_to_start_menu_allowed, can_procedure_in_progress, main_functionality_active;
 
+extern uint32_t user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, user_wheel_pulses, user_quota, user_mass_per_turn;
 
-#define ERROR_COUNT_TOTAL 5
+#define ERROR_COUNT_TOTAL 6
 #define ERROR_TYPE_FAN 0
 #define ERROR_TYPE_MOTOR 1
 #define ERROR_TYPE_CAN 2
 #define ERROR_TYPE_SPEED 3
 #define ERROR_TYPE_QUOTA 4
+#define ERROR_TYPE_EMPTY 5
 
-extern uint8_t error_active[ERROR_COUNT_TOTAL];
-extern uint64_t error_last_activated[ERROR_COUNT_TOTAL];
+#define ERROR_DETERMINATION_TIME 600
+#define ERROR_NOTIFICATION_BEEP_TIME 200 // MUST be divideable by TIM4 interval (10ms)
+#define ERROR_NOTIFICATION_BEEP_COUNT 4
+
+#define ERROR_STATE_ARRAY_COUNT 4
+#define ERROR_STATE_PREACTIVE 0
+#define ERROR_STATE_ACTIVE 1
+#define ERROR_NOTIFICATION_COMPLETE 2
+#define ERROR_NOTIFICATION_IN_PROGRESS 3
+
+extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
+extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start[ERROR_COUNT_TOTAL];
 
 // Resources
 #define LOGO_ERROR_ALERT_SIZE 20

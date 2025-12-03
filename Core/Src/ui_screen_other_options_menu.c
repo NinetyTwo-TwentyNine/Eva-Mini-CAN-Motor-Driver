@@ -1,33 +1,21 @@
-#include <ui_screen_start_menu.h>
+#include <ui_screen_other_options_menu.h>
 
 static uint8_t element_count = 4;
-static char *main_menu_lbl = "Главная", *seeder_options_lbl = "Настройки высева", *errors_lbl = "Ошибки", *other_options_lbl = "Настройки";
-static int8_t main_menu_id = 1, seeder_options_id = 2, errors_id = 3, other_options_id = 4;
-static const uint8_t xpos[] = { 40, 16, 44, 36 };
+static char *fan_sensor_lbl = "Датчик вентилятора", *speed_sensor_lbl = "Датчик скорости", *quota_check_lbl = "Наработка", *back_lbl = "назад";
+static int8_t fan_sensor_id = 1, speed_sensor_id = 2, quota_check_id = 3, back_id = 4;
+static const uint8_t xpos[] = { 4, 4, 4, 4 };
 static const uint8_t ypos[] = { 4, 20, 36, 52 };
 
-static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
+static void OptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
 	switch(press_type)
 	{
 		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
 			break;
 		case PRESS_TYPE_OK:
-			if (element->visual->id == main_menu_id)
+			if (element->visual->id == back_id)
 			{
-				UI_BuildMainMenu(screen);
-			}
-			else if (element->visual->id == seeder_options_id)
-			{
-				UI_BuildSeederOptionsMenu(screen);
-			}
-			else if (element->visual->id == errors_id)
-			{
-				UI_BuildErrorsMenu(screen);
-			}
-			else if (element->visual->id == other_options_id)
-			{
-				UI_BuildOptionsMenu(screen);
+				UI_BuildStartMenu(screen);
 			}
 			break;
 		case PRESS_TYPE_OTHER:
@@ -37,12 +25,12 @@ static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type pre
 }
 
 
-void UI_BuildStartMenu(UI_Screen* screen)
+void UI_BuildOptionsMenu(UI_Screen* screen)
 {
 	ui_clearElements(screen);
 	
-	char* labels[] = { main_menu_lbl, seeder_options_lbl, errors_lbl, other_options_lbl };
-	int8_t ids[] = { main_menu_id, seeder_options_id, errors_id, other_options_id };
+	char* labels[] = { fan_sensor_lbl, speed_sensor_lbl, quota_check_lbl, back_lbl };
+	int8_t ids[] = { fan_sensor_id, speed_sensor_id, quota_check_id, back_id };
 
   for (uint8_t i = 0; i < element_count; i++)
   {
@@ -66,7 +54,7 @@ void UI_BuildStartMenu(UI_Screen* screen)
 		UI_Element_Interactable* inter = ui_bindInteractable(
 			screen,
       vis,
-      StartMenu_OnItemPressed
+      OptionsMenu_OnItemPressed
     );
 
     // Optional: assign interactable ID
@@ -74,11 +62,11 @@ void UI_BuildStartMenu(UI_Screen* screen)
   }
 
 	screen->should_draw_cursor = true;
-	screen->cursor_left_or_right = 0;
+	screen->cursor_left_or_right = 1;
 	
   // Default hover index
   if (screen->visuals_count > 0)
     screen->hovered = &screen->visuals[0];
 	
-	switch_to_start_menu_allowed = false;
+	switch_to_start_menu_allowed = true;
 }

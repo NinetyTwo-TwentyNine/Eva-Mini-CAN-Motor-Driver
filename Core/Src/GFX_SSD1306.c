@@ -859,7 +859,7 @@ void display_buildUIScreen(UI_Screen* screen)
 			}
 			if (triangle_x0 + cursor_offset + triangle_centerline > _width)
 			{
-				triangle_x0 = _width - triangle_centerline; // In case the cursor's out of bounds
+				triangle_x0 = _width - triangle_centerline - 1; // In case the cursor's out of bounds
 			}
 			else
 			{

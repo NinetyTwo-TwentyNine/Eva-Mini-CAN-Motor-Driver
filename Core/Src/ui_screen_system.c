@@ -61,11 +61,7 @@ void ui_clearElements(UI_Screen* screen)
   memset(screen->visuals, 0, sizeof(screen->visuals));
   memset(screen->interactables, 0, sizeof(screen->interactables));
 	
-	screen->offset_y = 0;
-	screen->visuals_count = 0;
-	screen->hovered = NULL;
-	screen->interactables_count = 0;
-	screen->item_is_selected = 0;
+	memset(screen, 0, sizeof(*screen));
 }
 
 UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset)

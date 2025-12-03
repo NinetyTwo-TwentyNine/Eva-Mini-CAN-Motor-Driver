@@ -575,6 +575,21 @@
               <FilePath>..\Core\Inc\ui_screen_main_menu.h</FilePath>
             </File>
             <File>
+              <FileName>ui_screen_seeder_options_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_screen_seeder_options_menu.h</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_errors_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_screen_errors_menu.h</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_other_options_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_screen_other_options_menu.h</FilePath>
+            </File>
+            <File>
               <FileName>can_parser.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\can_parser.c</FilePath>
@@ -618,6 +633,21 @@
               <FileName>ui_screen_main_menu.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\ui_screen_main_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_seeder_options_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_screen_seeder_options_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_errors_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_screen_errors_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_other_options_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_screen_other_options_menu.c</FilePath>
             </File>
           </Files>
         </Group>
