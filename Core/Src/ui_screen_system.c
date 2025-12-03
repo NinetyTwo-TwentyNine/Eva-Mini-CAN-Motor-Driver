@@ -1,12 +1,71 @@
 #include "ui_screen_system.h"
 
+char* utf8rus(const char* source) // utf8 conversion for cyrillic letters
+{
+  uint16_t src_i,trg_i,k;
+	
+	if (!source) return NULL;
+	char* target = NULL;
+	for (uint16_t i = 0; (i < 10000 && target == NULL); i++)
+	{	
+		target = malloc(strlen(source) + 1); // +1 for '\0'
+	}
+	if (!target)
+	{
+		return NULL;
+	}
+	
+  unsigned n;
+
+  k = strlen(source); src_i = 0; trg_i = 0;
+
+  while (src_i < k) {
+    n = source[src_i]; src_i++;
+
+    if (n >= 0xC0) {
+      switch (n) {
+        case 0xD0: {
+          n = source[src_i]; src_i++;
+          if (n == 0x81) { n = 0xA8; break; }
+          if (n >= 0x90 && n <= 0xBF) n = n + 0x30;
+          break;
+        }
+        case 0xD1: {
+          n = source[src_i]; src_i++;
+          if (n == 0x91) { n = 0xB8; break; }
+          if (n >= 0x80 && n <= 0x8F) n = n + 0x70;
+          break;
+        }
+      }
+    }
+		target[trg_i++] = n;
+  }
+	target[trg_i] = '\0';
+	
+	return target;
+}
+
+
 void ui_clearElements(UI_Screen* screen)
 {
+  // Free allocated text in all used visuals
+  for (uint8_t i = 0; i < screen->visuals_count; i++) {
+      UI_Element_Visual *e = &screen->visuals[i];
+      if (e->type == VISUAL_TYPE_TEXT && e->data.text.text != NULL) {
+          free(e->data.text.text);
+          e->data.text.text = NULL;
+      }
+			memset(e, 0, sizeof(*e));
+  }
+
+  memset(screen->visuals, 0, sizeof(screen->visuals));
+  memset(screen->interactables, 0, sizeof(screen->interactables));
+	
 	screen->offset_y = 0;
 	screen->visuals_count = 0;
+	screen->hovered = NULL;
 	screen->interactables_count = 0;
 	screen->item_is_selected = 0;
-	screen->hovered = NULL;
 }
 
 UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset)
@@ -15,11 +74,8 @@ UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type
         return NULL;
 
     UI_Element_Visual *e = &screen->visuals[screen->visuals_count++];
-    
-		if (e->data.text.text) { // A malloc string
-			free(e->data.text.text);
-		}
-    memset(e, 0, sizeof(UI_Element_Visual));
+		
+		memset(e, 0, sizeof(UI_Element_Visual));
 
 		e->id = -1;
     e->type = type;
@@ -56,7 +112,7 @@ UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t c
     if (!e)
         return NULL;
 
-    e->data.text.text = text;
+    e->data.text.text = utf8rus(text);
     e->data.text.font = font;
 
     return e;
@@ -186,6 +242,7 @@ void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected)
 			screen->item_is_selected = is_selected;
 	}
 }
+
 
 void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interaction_type)
 {

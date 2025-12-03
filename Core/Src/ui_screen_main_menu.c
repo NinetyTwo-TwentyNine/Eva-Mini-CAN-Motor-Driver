@@ -17,7 +17,7 @@ static const uint8_t val_xpos[] = { 42, 16, 16, 92 };
 static const uint8_t val_ypos[] = { 20, 36, 52, 52 };
 
 static uint8_t element_icon_count = 2;
-static int8_t error_icon_id = 5, error_val_id = 6, seeder_icon_id = 7, seeder_val_id = 8;
+static int8_t error_icon_id = 5, seeder_icon_id = 6, error_val_id = 7, seeder_val_id = 8;
 static const uint8_t icon_xpos[] = { 4, 105, 16, 115 };
 static const uint8_t icon_ypos[] = { 4, 36, 4, 36 };
 
@@ -36,7 +36,6 @@ void UI_BuildMainMenu(UI_Screen* screen)
   for (uint8_t i = 0; i < element_text_count; i++)
   {
     // ---------------- Visual (Text) ----------------
-		char* text_lbl = utf8rus(texts[i]);
     UI_Element_Visual* text_elem = ui_addText(
         screen,
         text_xpos[i],            // pos_x
@@ -44,7 +43,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 				WHITE,							// color
 			  -1,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  text_lbl,          		// text
+			  texts[i],          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
@@ -55,7 +54,6 @@ void UI_BuildMainMenu(UI_Screen* screen)
   for (uint8_t i = 0; i < element_type_count; i++)
   {
     // ---------------- Visual (Type) ----------------
-		char* type_lbl = utf8rus(types[i]);
     UI_Element_Visual* type_elem = ui_addText(
         screen,
         type_xpos[i],            // pos_x
@@ -63,7 +61,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 				WHITE,							// color
 			  -1,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  type_lbl,          		// text
+			  types[i],          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
@@ -74,7 +72,6 @@ void UI_BuildMainMenu(UI_Screen* screen)
 	for (uint8_t i = 0; i < element_val_count; i++)
 	{
     // ---------------- Visual (Value) ----------------
-		char* val_lbl = utf8rus(val_defaults[i]);
     UI_Element_Visual* val_elem = ui_addText(
         screen,
         val_xpos[i],            // pos_x
@@ -82,7 +79,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 				WHITE,							// color
 			  -1,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  val_lbl,          		// text
+			  val_defaults[i],          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
@@ -108,7 +105,6 @@ void UI_BuildMainMenu(UI_Screen* screen)
 		);
 		icon_elem->id = icon_ids[i];
 
-		char* icon_val_lbl = (i % 2 == 0)? utf8rus("Бункер пуст") : utf8rus("Т");
 		UI_Element_Visual* val_elem = ui_addText(
       screen,
       icon_xpos[i+element_icon_count],            // pos_x
@@ -116,7 +112,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 			WHITE,							// color
 			-1,              // tab index
 			CHAR_BASE_WIDTH*3,  // cursor offset
-			icon_val_lbl,          		// text
+			((i % 2 == 0)? "Бункер пуст" : "Т"),          		// text
       UI_MAIN_TEXT_SIZE   // font size
 		);
 		val_elem->id = icon_ids[i + element_icon_count];

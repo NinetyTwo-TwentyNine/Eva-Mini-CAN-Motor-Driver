@@ -35,7 +35,7 @@ void UI_BuildStartMenu(UI_Screen* screen)
   for (uint8_t i = 0; i < element_count; i++)
   {
     // ---------------- Visual ----------------
-		char* label = utf8rus(labels[i]);
+		//char* label = utf8rus(labels[i]);
     UI_Element_Visual* vis = ui_addText(
         screen,
         xpos[i],                 // pos_x
@@ -43,7 +43,7 @@ void UI_BuildStartMenu(UI_Screen* screen)
 				WHITE,							// color
 			  i + 1,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  label,          		// text
+			  labels[i],          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 

@@ -34,6 +34,7 @@ float calculate_frequency(uint8_t sensor_num)
 	return (float)timer_clk_hz / delta;
 }
 
+// Done in the input capture interrupts
 void capture_value(TIM_TypeDef* timer, uint8_t channel)
 {
 	uint8_t sensor_num;

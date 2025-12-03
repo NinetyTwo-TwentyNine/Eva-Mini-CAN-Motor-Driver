@@ -63,8 +63,5 @@ extern uint8_t _rotation, _textsize, _wrap;
     display_width(void);
 
   uint8_t gfx_getRotation(void);
-		
-	// utf8 conversion for cyrillic letters
-	char* utf8rus(char* source);
 
 #endif // _GGFX_H

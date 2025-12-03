@@ -80,18 +80,20 @@ struct Struct_UI_Screen {
 	uint8_t cursor_left_or_right;
 	uint16_t offset_y;
 	
-	UI_Callback_General screen_callback;
+	//UI_Callback_General screen_callback;
 };
 
 
-void ui_hoverNext(UI_Screen* screen, uint8_t direction);
-void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected);
-void ui_clearElements(UI_Screen* screen);
+char* utf8rus(const char* source);
 
+void ui_clearElements(UI_Screen* screen);
 UI_Element_Visual* ui_addVisualElement(UI_Screen* screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset);
 UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t cursor_offset, char* text, uint8_t font);
 UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t w, uint8_t h, uint8_t* bitmap);
 UI_Element_Interactable* ui_bindInteractable(UI_Screen* screen, UI_Element_Visual* v, UI_Callback callback);
+
+void ui_hoverNext(UI_Screen* screen, uint8_t direction);
+void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected);
 
 void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interaction_type);
 
