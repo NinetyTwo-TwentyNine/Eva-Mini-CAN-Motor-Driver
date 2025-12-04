@@ -306,82 +306,88 @@ void TIM3_IRQHandler(void)
 void TIM4_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM4_IRQn 0 */
-	LL_TIM_ClearFlag_UPDATE(TIM4);
-	
-	uint64_t time_now = sys_timer;
-	//time_now -= time_now % 10;
-	
-	for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
+  if (LL_TIM_IsActiveFlag_UPDATE(TIM4))
 	{
-		if (error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && !error_state_array[ERROR_STATE_ACTIVE][i])
+		LL_TIM_ClearFlag_UPDATE(TIM4);
+		
+		uint64_t time_now = sys_timer;
+		//time_now -= time_now % 10;
+		
+		for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
 		{
-			error_state_array[ERROR_STATE_PREACTIVE][i] = false;
-			error_state_array[ERROR_STATE_ACTIVE][i] = true;
-			error_last_activated[i] = time_now;
+			if (error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && !error_state_array[ERROR_STATE_ACTIVE][i])
+			{
+				error_state_array[ERROR_STATE_PREACTIVE][i] = false;
+				error_state_array[ERROR_STATE_ACTIVE][i] = true;
+				error_last_activated[i] = time_now;
+			}
+			else if (!error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && error_state_array[ERROR_STATE_ACTIVE][i])
+			{
+				error_state_array[ERROR_STATE_ACTIVE][i] = false;
+				error_state_array[ERROR_NOTIFICATION_COMPLETE][i] = false;
+				if (error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i])
+				{
+					LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_9);
+					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i] = false;
+				}
+			}
 		}
-		else if (!error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && error_state_array[ERROR_STATE_ACTIVE][i])
+		
+		uint8_t should_start_notification = false, should_continue_notification = false, chosen_index;
+		uint64_t time_comparison = 0;
+		for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
 		{
-			error_state_array[ERROR_STATE_ACTIVE][i] = false;
-			error_state_array[ERROR_NOTIFICATION_COMPLETE][i] = false;
 			if (error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i])
 			{
-				LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_9);
-				error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i] = false;
-			}
-		}
-	}
-	
-	uint8_t should_start_notification = false, should_continue_notification = false, chosen_index;
-	uint64_t time_comparison = 0;
-	for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
-	{
-		if (error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i])
-		{
-			chosen_index = i;
-			should_continue_notification = true;
-			should_start_notification = false;
-			break;
-		}
-		else if (error_state_array[ERROR_STATE_ACTIVE][i])
-		{
-			if ((time_now - error_last_activated[i]) > time_comparison)
-			{
-				time_comparison = (time_now - error_last_activated[i]);
 				chosen_index = i;
-				should_start_notification = true;
+				should_continue_notification = true;
+				should_start_notification = false;
+				break;
+			}
+			else if (error_state_array[ERROR_STATE_ACTIVE][i])
+			{
+				if ((time_now - error_last_activated[i]) > time_comparison)
+				{
+					time_comparison = (time_now - error_last_activated[i]);
+					chosen_index = i;
+					should_start_notification = true;
+				}
 			}
 		}
-	}
-	
-	if (should_start_notification)
-	{
-		error_notification_start[chosen_index] = time_now;
-		error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = true;
-		LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
-	}
-	else if (should_continue_notification)
-	{
-		uint64_t time_diff = time_now - error_notification_start[chosen_index];
-		if (time_diff % ERROR_NOTIFICATION_BEEP_TIME == 0)
+		
+		if (should_start_notification)
 		{
-			((time_diff / ERROR_NOTIFICATION_BEEP_TIME) % 2) ? LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_9) : LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
-			if (time_diff / ERROR_NOTIFICATION_BEEP_TIME == (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
+			error_notification_start[chosen_index] = time_now;
+			error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = true;
+			LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
+		}
+		else if (should_continue_notification)
+		{
+			uint64_t time_diff = time_now - error_notification_start[chosen_index];
+			if (time_diff % ERROR_NOTIFICATION_BEEP_TIME == 0)
 			{
-				error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
-				error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
+				((time_diff / ERROR_NOTIFICATION_BEEP_TIME) % 2) ? LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_9) : LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
+				if (time_diff / ERROR_NOTIFICATION_BEEP_TIME == (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
+				{
+					error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
+					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
+				}
+			}
+		}
+		
+		// Screen general callback
+		if (main_ui_on && main_screen.general_callback != NULL)
+		{
+			if (time_now - ui_last_callback_time > main_screen.callback_interval)
+			{
+				ui_last_callback_time = sys_timer;
+				main_screen.general_callback(&main_screen);
 			}
 		}
 	}
   /* USER CODE END TIM4_IRQn 0 */
   /* USER CODE BEGIN TIM4_IRQn 1 */
-	if (main_ui_on && main_screen.screen_callback != NULL)
-	{
-		if (time_now - ui_last_callback_time > main_screen.callback_interval)
-		{
-			ui_last_callback_time = sys_timer;
-			main_screen.screen_callback(&main_screen);
-		}
-	}
+	
   /* USER CODE END TIM4_IRQn 1 */
 }
 
@@ -446,7 +452,7 @@ void EXTI5_IRQHandler(void)
 		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_5);
     /* USER CODE BEGIN LL_EXTI_LINE_3 */
 		
-		// Handle data request
+		// TODO: Handle mode selection
 		
     /* USER CODE END LL_EXTI_LINE_3 */
   }

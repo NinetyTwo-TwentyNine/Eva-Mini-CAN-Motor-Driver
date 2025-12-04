@@ -1,24 +1,14 @@
 #include "ui_screen_system.h"
 
-char* utf8rus(const char* source) // utf8 conversion for cyrillic letters
+char* utf8rus(const char* source, char* target) // utf8 conversion for cyrillic letters
 {
-  uint16_t src_i,trg_i,k;
+  uint16_t src_i, trg_i, k;
 	
-	if (!source) return NULL;
-	char* target = NULL;
-	for (uint16_t i = 0; (i < 10000 && target == NULL); i++)
-	{	
-		target = malloc(strlen(source) + 1); // +1 for '\0'
-	}
-	if (!target)
-	{
-		return NULL;
-	}
-	
-  unsigned n;
+	if (!source || !target) return NULL;
 
   k = strlen(source); src_i = 0; trg_i = 0;
 
+  unsigned char n;
   while (src_i < k) {
     n = source[src_i]; src_i++;
 
@@ -46,34 +36,34 @@ char* utf8rus(const char* source) // utf8 conversion for cyrillic letters
 }
 
 
-void ui_clearElements(UI_Screen* screen)
+void ui_clearScreen(UI_Screen* screen)
 {
-  // Free allocated text in all used visuals
   for (uint8_t i = 0; i < screen->visuals_count; i++) {
       UI_Element_Visual *e = &screen->visuals[i];
-      if (e->type == VISUAL_TYPE_TEXT && e->data.text.text != NULL) {
-          free(e->data.text.text);
-          e->data.text.text = NULL;
-      }
+
 			memset(e, 0, sizeof(*e));
   }
-
-  memset(screen->visuals, 0, sizeof(screen->visuals));
-  memset(screen->interactables, 0, sizeof(screen->interactables));
+  for (uint8_t i = 0; i < screen->interactables_count; i++) {
+      UI_Element_Interactable *e = &screen->interactables[i];
+			memset(e, 0, sizeof(*e));
+  }
 	
 	memset(screen, 0, sizeof(*screen));
+	screen->general_callback = NULL; // No callback by default
 }
 
-UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset)
+UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, uint8_t tab_index, int8_t cursor_offset)
 {
     if (screen->visuals_count >= UI_MAX_ELEMENT_COUNT)
         return NULL;
 
     UI_Element_Visual *e = &screen->visuals[screen->visuals_count++];
-		
 		memset(e, 0, sizeof(UI_Element_Visual));
 
-		e->id = -1;
+		e->id = 0;
+		e->offset_y_down = -1;
+		e->offset_y_up = -1;
+		
     e->type = type;
     e->pos_x = pos_x;
     e->pos_y = pos_y;
@@ -85,10 +75,24 @@ UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type
     return e;
 }
 
+UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t tab_index, int8_t cursor_offset, char* text, uint8_t font)
+{
+    UI_Element_Visual *e =
+        ui_addVisualElement(screen, VISUAL_TYPE_TEXT, x, y, color, tab_index, cursor_offset);
+
+    if (!e)
+        return NULL;
+
+		utf8rus(text, e->data.text.text);
+    e->data.text.font = font;
+
+    return e;
+}
+
 UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t w, uint8_t h, uint8_t* bitmap)
 {
     UI_Element_Visual* e =
-        ui_addVisualElement(screen, VISUAL_TYPE_BITMAP, x, y, color, -1, 0);
+        ui_addVisualElement(screen, VISUAL_TYPE_BITMAP, x, y, color, 0, -1);
 
     if (!e)
         return NULL;
@@ -100,30 +104,16 @@ UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t
     return e;
 }
 
-UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t cursor_offset, char* text, uint8_t font)
-{
-    UI_Element_Visual *e =
-        ui_addVisualElement(screen, VISUAL_TYPE_TEXT, x, y, color, tab_index, cursor_offset);
-
-    if (!e)
-        return NULL;
-
-    e->data.text.text = utf8rus(text);
-    e->data.text.font = font;
-
-    return e;
-}
-
 UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
 {
     if (screen->interactables_count >= UI_MAX_ELEMENT_COUNT)
         return NULL;
 		
 		UI_Element_Interactable* i = &(screen->interactables[screen->interactables_count++]);
-		
 		memset(i, 0, sizeof(UI_Element_Interactable));
 		
-		i->id = -1;
+		i->id = 0;
+		
     i->visual = v;
 		i->callback = callback;
 		i->context = screen;
@@ -134,10 +124,10 @@ UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visua
 
 void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 {
-	int16_t tabindex_prev;
+	uint8_t tabindex_prev;
 	if (screen->hovered == NULL)
 	{
-		tabindex_prev = direction ? -1 : 0xFF;
+		tabindex_prev = direction ? 0 : 0xFF;
 	}
 	else
 	{
@@ -151,8 +141,8 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 	{
 		for (uint8_t i = 0; i < screen->visuals_count; i++)
 		{
-			int8_t ti = screen->visuals[i].tab_index;
-			if (ti == -1)
+			uint8_t ti = screen->visuals[i].tab_index;
+			if (ti == 0)
 				continue;
 
 			if (ti > tabindex_prev)
@@ -170,8 +160,8 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 	{
 		for (uint8_t i = 0; i < screen->visuals_count; i++)
 		{
-			int8_t ti = screen->visuals[i].tab_index;
-			if (ti == -1)
+			uint8_t ti = screen->visuals[i].tab_index;
+			if (ti == 0)
 				continue;
 
 			if (ti < tabindex_prev)
@@ -192,7 +182,7 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 		// initialize best to first valid element
 		for (uint8_t i = 0; i < screen->visuals_count; i++)
 		{
-			if (screen->visuals[i].tab_index != -1)
+			if (screen->visuals[i].tab_index != 0)
 			{
 				best = &screen->visuals[i];
 				break;
@@ -204,8 +194,8 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 			// now find min or max tab_index depending on direction
 			for (uint8_t i = 0; i < screen->visuals_count; i++)
 			{
-				int8_t ti = screen->visuals[i].tab_index;
-				if (ti == -1)
+				uint8_t ti = screen->visuals[i].tab_index;
+				if (ti == 0)
 					continue;
 
 				if (direction)

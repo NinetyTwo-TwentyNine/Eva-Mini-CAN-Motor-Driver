@@ -748,7 +748,18 @@ void display_buildUIScreen(UI_Screen* screen)
 			font_size = curr_hovered->data.text.font;
 		}
 		
-		uint16_t comparison_height_down = (_height + offset_y - font_size * CHAR_BASE_HEIGHT * 3 / 2), comparison_height_up = CHAR_BASE_HEIGHT / 2;
+		uint8_t height_down_offset = font_size * CHAR_BASE_HEIGHT * 3 / 2, height_up_offset = CHAR_BASE_HEIGHT / 2;
+		if (!(curr_hovered->offset_y_down < 0))
+		{
+			height_down_offset += curr_hovered->offset_y_down;
+		}
+		if (!(curr_hovered->offset_y_up < 0))
+		{
+			height_up_offset += curr_hovered->offset_y_up;
+		}
+		
+		uint16_t comparison_height_down = _height - height_down_offset, comparison_height_up = height_up_offset;
+		
 		if ((int16_t)curr_hovered->pos_y - (int16_t)offset_y > comparison_height_down)
 		{
 			offset_y += (int16_t)curr_hovered->pos_y - (int16_t)offset_y - (int16_t)comparison_height_down;
@@ -756,7 +767,7 @@ void display_buildUIScreen(UI_Screen* screen)
 		else if ((int16_t)curr_hovered->pos_y - (int16_t)offset_y < comparison_height_up)
 		{
 			offset_y -= (int16_t)offset_y - (int16_t)curr_hovered->pos_y + (int16_t)comparison_height_up;
-		} 
+		}
 		screen->offset_y = offset_y;
 	}
 	
@@ -769,7 +780,7 @@ void display_buildUIScreen(UI_Screen* screen)
 		{
 			case VISUAL_TYPE_TEXT:
 			{
-				gfx_setTextColor(WHITE, WHITE);
+				gfx_setTextColor(curr_visual->color, curr_visual->color);
 				gfx_setTextSize(curr_visual->data.text.font);
 				gfx_print(curr_visual->data.text.text);
 			} break;
@@ -783,7 +794,7 @@ void display_buildUIScreen(UI_Screen* screen)
 						break;
 					}
 					uint8_t new_pos_x = x0 + curr_visual->data.lines.x_n[j], new_pos_y = y0 + curr_visual->data.lines.y_n[j];
-					gfx_drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, WHITE);
+					gfx_drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, curr_visual->color);
 					prev_pos_x = new_pos_x;
 					prev_pos_y = new_pos_y;
 				}
@@ -791,32 +802,32 @@ void display_buildUIScreen(UI_Screen* screen)
 			case VISUAL_TYPE_TRIANGLE:
 			{
 				uint8_t x1 = x0 + curr_visual->data.triangle.x1, y1 = y0 + curr_visual->data.triangle.y1, x2 = x0 + curr_visual->data.triangle.x2, y2 = y0 + curr_visual->data.triangle.y2;
-				gfx_drawTriangle(x0, y0, x1, y1, x2, y2, WHITE);
+				gfx_drawTriangle(x0, y0, x1, y1, x2, y2, curr_visual->color);
 				if (!curr_visual->data.triangle.is_hollow)
 				{
-					gfx_fillTriangle(x0, y0, x1, y1, x2, y2, WHITE);
+					gfx_fillTriangle(x0, y0, x1, y1, x2, y2, curr_visual->color);
 				}
 			}	break;
 			case VISUAL_TYPE_RECTANGLE: 
 			{
-				gfx_drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
+				gfx_drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, curr_visual->color);
 				if (!curr_visual->data.rectangle.is_hollow)
 				{
-					gfx_fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, WHITE);
+					gfx_fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, curr_visual->color);
 				}
 			}	break;
 			case VISUAL_TYPE_CIRCLE:
 			{
 				uint8_t r = curr_visual->data.circle.radius, new_x = x0 + r, new_y = y0 - r;
-				gfx_drawCircle(new_x, new_y, r, WHITE);
+				gfx_drawCircle(new_x, new_y, r, curr_visual->color);
 				if (!curr_visual->data.circle.is_hollow)
 				{
-					gfx_fillCircle(new_x, new_y, r, WHITE);
+					gfx_fillCircle(new_x, new_y, r, curr_visual->color);
 				}
 			}	break;
 			case VISUAL_TYPE_BITMAP:
 			{
-				gfx_drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, WHITE);
+				gfx_drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, curr_visual->color);
 			}	break;
 		}
 	}
@@ -827,7 +838,12 @@ void display_buildUIScreen(UI_Screen* screen)
 		char* text_str = curr_hovered->data.text.text;
 		uint8_t text_font = curr_hovered->data.text.font;
 		
-		uint8_t cursor_left_right = screen->cursor_left_or_right, cursor_offset = curr_hovered->cursor_offset;
+		uint8_t cursor_left_right = screen->cursor_left_or_right;
+		uint8_t cursor_offset = CHAR_BASE_WIDTH * 3;
+		if (!(curr_hovered->cursor_offset < 0))
+		{
+			cursor_offset = curr_hovered->cursor_offset;
+		}
 		
 		uint8_t triangle_centerline = CHAR_BASE_HEIGHT * 3 / 4;
 		uint16_t triangle_x0 = curr_hovered->pos_x, triangle_y0 = curr_hovered->pos_y + (text_font * CHAR_BASE_HEIGHT / 2 - 1) - offset_y;

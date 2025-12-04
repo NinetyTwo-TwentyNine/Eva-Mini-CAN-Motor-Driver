@@ -1,43 +1,60 @@
 #include <ui_screen_errors_menu.h>
 
-static uint8_t element_count = 12;
-static char *bunker_error_lbl = "Бункер пуст: напол", *bunker_error_2_lbl = "ните бункер", *fan_error_lbl = "Ошибка вентилятора:", *fan_error_2_lbl = "скорость вне рамок", *motor_error_lbl = "Ошибка мотора: отсут", *motor_error_2_lbl = "ствует подключение", *can_error_lbl = "Ошибка мотора: отсут", *can_error_2_lbl = "CAN сигнал", *speed_error_lbl = "Ошибка скорости: ско", *speed_error_2_lbl = "рость вне рамок", *quota_error_lbl = "Ошибка высева: норма", *quota_error_2_lbl = "не равна заданной";
-static int8_t bunker_error_id = -1, bunker_error_2_id = 1, fan_error_id = -1, fan_error_2_id = 2, motor_error_id = -1, motor_error_2_id = 3, can_error_id = -1, can_error_2_id = 4, speed_error_id = -1, speed_error_2_id = 5, quota_error_id = -1, quota_error_2_id = 6;
-static int8_t bunker_error_tab_id = -1, bunker_error_2_tab_id = 1, fan_error_tab_id = -1, fan_error_2_tab_id = 2, motor_error_tab_id = -1, motor_error_2_tab_id = 3, can_error_tab_id = -1, can_error_2_tab_id = 4, speed_error_tab_id = -1, speed_error_2_tab_id = 5, quota_error_tab_id = -1, quota_error_2_tab_id = 6;
-static const uint8_t xpos[] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
-static const uint8_t ypos[] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
+static const uint8_t element_count = 12;
+static char *bunker_error_lbl = "Бункер пуст: напол", *fan_error_lbl = "Ошибка вентилятора:", *motor_error_lbl = "Ошибка мотора: отсут", *can_error_lbl = "Ошибка мотора: отсут", *speed_error_lbl = "Ошибка скорости: ско", *quota_error_lbl = "Ошибка высева: норма";
+static char *bunker_error_2_lbl = "ните бункер", *fan_error_2_lbl = "скорость вне рамок", *motor_error_2_lbl = "ствует подключение", *can_error_2_lbl = "CAN сигнал", *speed_error_2_lbl = "рость вне рамок", *quota_error_2_lbl = "не равна заданной";
+static uint8_t bunker_error_id = 1, fan_error_id = 2, motor_error_id = 3, can_error_id = 4, speed_error_id = 5, quota_error_id = 6;
+static uint8_t bunker_error_tab_id = 1, fan_error_tab_id = 2, motor_error_tab_id = 3, can_error_tab_id = 4, speed_error_tab_id = 5, quota_error_tab_id = 6;
+static uint8_t xpos[] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
+static uint8_t ypos[] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
 
 static void ErrorsMenu_ScreenCallback(UI_Screen* screen)
 {
-	UI_BuildErrorsMenu(screen); // TODO: handle error updates in real time
+	// TODO: handle error updates in real time
 }
 
 
 void UI_BuildErrorsMenu(UI_Screen* screen)
 {
-	ui_clearElements(screen);
+	ui_clearScreen(screen);
 	
-	char* labels[] = { bunker_error_lbl, bunker_error_2_lbl, fan_error_lbl, fan_error_2_lbl, motor_error_lbl, motor_error_2_lbl, can_error_lbl, can_error_2_lbl, speed_error_lbl, speed_error_2_lbl, quota_error_lbl, quota_error_2_lbl };
-	int8_t ids[] = { bunker_error_id, bunker_error_2_id, fan_error_id, fan_error_2_id, motor_error_id, motor_error_2_id, can_error_id, can_error_2_id, speed_error_id, speed_error_2_id, quota_error_id, quota_error_2_id };
-	int8_t tab_ids[] = { bunker_error_tab_id, bunker_error_2_tab_id, fan_error_tab_id, fan_error_2_tab_id, motor_error_tab_id, motor_error_2_tab_id, can_error_tab_id, can_error_2_tab_id, speed_error_tab_id, speed_error_2_tab_id, quota_error_tab_id, quota_error_2_tab_id };
+	char* labels[element_count] = { bunker_error_lbl, bunker_error_2_lbl, fan_error_lbl, fan_error_2_lbl, motor_error_lbl, motor_error_2_lbl, can_error_lbl, can_error_2_lbl, speed_error_lbl, speed_error_2_lbl, quota_error_lbl, quota_error_2_lbl };
+	uint8_t ids[element_count / 2] = { bunker_error_id, fan_error_id, motor_error_id, can_error_id, speed_error_id, quota_error_id };
+	uint8_t tab_ids[element_count / 2] = { bunker_error_tab_id, fan_error_tab_id, motor_error_tab_id, can_error_tab_id, speed_error_tab_id, quota_error_tab_id };
 	
-  for (uint8_t i = 0; i < element_count; i++)
+  for (uint8_t i = 0; i < element_count / 2; i++)
   {
     // ---------------- Visual ----------------
-		//char* label = utf8rus(labels[i]);
     UI_Element_Visual* vis = ui_addText(
         screen,
-        xpos[i],                 // pos_x
-        ypos[i],            // pos_y
+        xpos[i * 2],                 // pos_x
+        ypos[i * 2],            // pos_y
 				WHITE,							// color
-			  tab_ids[i],              // tab index
+			  0,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  labels[i],          		// text
+			  labels[i * 2],          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
     // Optional: assign visual ID
-		vis->id = ids[i];
+		vis->id = 0;
+		
+    UI_Element_Visual* vis2 = ui_addText(
+        screen,
+        xpos[i * 2 + 1],                 // pos_x
+        ypos[i * 2 + 1],            // pos_y
+				WHITE,							// color
+			  tab_ids[i],              // tab index
+				CHAR_BASE_WIDTH*3,  // cursor offset
+			  labels[i * 2 + 1],          		// text
+        UI_MAIN_TEXT_SIZE   // font size
+    );
+		
+		// Optional: assign y offset down
+		vis2->offset_y_up = CHAR_BASE_HEIGHT * 3 / 2;
+
+    // Optional: assign visual ID
+		vis2->id = ids[i];
   }
 
 	screen->should_draw_cursor = true;
@@ -48,7 +65,7 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
     screen->hovered = &screen->visuals[1];
 	
 	screen->callback_interval = 100;
-	screen->screen_callback = ErrorsMenu_ScreenCallback;
+	screen->general_callback = ErrorsMenu_ScreenCallback;
 	
 	switch_to_start_menu_allowed = true;
 }

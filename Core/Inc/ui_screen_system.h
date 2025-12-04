@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define UI_ELEMENT_MAX_CHAR_COUNT 32
+#define UI_ELEMENT_MAX_LINE_COUNT 32
 #define UI_MAX_ELEMENT_COUNT 32
 
 typedef enum
@@ -34,20 +36,23 @@ typedef void (*UI_Callback)(UI_Screen* screen, UI_Element_Press_Type press_type,
 typedef void (*UI_Callback_General)(UI_Screen* screen);
 
 struct Struct_UI_Element_Visual {
-	int8_t id;
+	uint8_t id;
 	
 	UI_Element_Visual_Type type;
 	uint16_t pos_x, pos_y;
 	uint8_t color;
 	
-	int8_t tab_index;
-	uint8_t cursor_offset;
+	uint8_t tab_index;
+	int8_t cursor_offset;
+	
+	int8_t offset_y_up, offset_y_down;
+	
 	
 	//UI_Element_Interactable* interactable;
 	
 	union {
-		struct { char *text; uint8_t font; } text;
-		struct { uint8_t x_n[UI_MAX_ELEMENT_COUNT]; uint8_t y_n[UI_MAX_ELEMENT_COUNT]; uint8_t line_count; } lines;
+		struct { char text[UI_ELEMENT_MAX_CHAR_COUNT]; uint8_t font; } text;
+		struct { uint8_t x_n[UI_ELEMENT_MAX_LINE_COUNT]; uint8_t y_n[UI_ELEMENT_MAX_LINE_COUNT]; uint8_t line_count; } lines;
 		struct { uint8_t x1; uint8_t y1; uint8_t x2; uint8_t y2; uint8_t is_hollow; } triangle;
 		struct { uint8_t w; uint8_t h; uint8_t is_hollow; } rectangle;
 		struct { uint8_t radius; uint8_t is_hollow; } circle;
@@ -58,7 +63,7 @@ struct Struct_UI_Element_Visual {
 };
 
 struct Struct_UI_Element_Interactable {
-	int id;
+	uint8_t id;
 	
 	UI_Element_Visual* visual;
 	UI_Callback callback;
@@ -78,18 +83,19 @@ struct Struct_UI_Screen {
 	
 	uint8_t should_draw_cursor;
 	uint8_t cursor_left_or_right;
+	
 	uint16_t offset_y;
 	
-	UI_Callback_General screen_callback;
+	UI_Callback_General general_callback;
 	uint16_t callback_interval;
 };
 
 
-char* utf8rus(const char* source);
+char* utf8rus(const char* source, char* target);
 
-void ui_clearElements(UI_Screen* screen);
-UI_Element_Visual* ui_addVisualElement(UI_Screen* screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, int8_t tab_index, uint8_t cursor_offset);
-UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, int8_t tab_index, uint8_t cursor_offset, char* text, uint8_t font);
+void ui_clearScreen(UI_Screen* screen);
+UI_Element_Visual* ui_addVisualElement(UI_Screen* screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, uint8_t tab_index, int8_t cursor_offset);
+UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t tab_index, int8_t cursor_offset, char* text, uint8_t font);
 UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t w, uint8_t h, uint8_t* bitmap);
 UI_Element_Interactable* ui_bindInteractable(UI_Screen* screen, UI_Element_Visual* v, UI_Callback callback);
 
