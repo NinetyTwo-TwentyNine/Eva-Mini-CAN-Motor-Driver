@@ -2,35 +2,25 @@
 
 static const uint8_t element_count = 4;
 static char *main_menu_lbl = "Главная", *seeder_options_lbl = "Настройки высева", *errors_lbl = "Ошибки", *other_options_lbl = "Настройки";
-static uint8_t main_menu_id = 1, seeder_options_id = 2, errors_id = 3, other_options_id = 4;
-static uint8_t xpos[] = { 40, 16, 44, 36 };
-static uint8_t ypos[] = { 4, 20, 36, 52 };
+static const uint8_t main_menu_id = 1, seeder_options_id = 2, errors_id = 3, other_options_id = 4;
+static uint8_t xpos[element_count] = { 40, 16, 44, 36 };
+static uint8_t ypos[element_count] = { 4, 20, 36, 52 };
 
 static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
+	if (element->visual == NULL || element->visual->id == 0) return;
+	
 	switch(press_type)
 	{
 		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
 			break;
 		case PRESS_TYPE_OK:
-			if (element->visual->id == 0)
-				break;
-			
-			if (element->visual->id == main_menu_id)
+			switch (element->visual->id)
 			{
-				UI_BuildMainMenu(screen);
-			}
-			else if (element->visual->id == seeder_options_id)
-			{
-				UI_BuildSeederOptionsMenu(screen);
-			}
-			else if (element->visual->id == errors_id)
-			{
-				UI_BuildErrorsMenu(screen);
-			}
-			else if (element->visual->id == other_options_id)
-			{
-				UI_BuildOptionsMenu(screen);
+				case main_menu_id: UI_BuildMainMenu(screen); break;
+				case seeder_options_id: UI_BuildSeederOptionsMenu(screen); break;
+				case errors_id: UI_BuildErrorsMenu(screen); break;
+				case other_options_id: UI_BuildOptionsMenu(screen); break;
 			}
 			break;
 		case PRESS_TYPE_OTHER:

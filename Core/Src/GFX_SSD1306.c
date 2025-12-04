@@ -758,7 +758,7 @@ void display_buildUIScreen(UI_Screen* screen)
 			height_up_offset += curr_hovered->offset_y_up;
 		}
 		
-		uint16_t comparison_height_down = _height - height_down_offset, comparison_height_up = height_up_offset;
+		uint16_t comparison_height_down = _height - height_down_offset - 1, comparison_height_up = height_up_offset;
 		
 		if ((int16_t)curr_hovered->pos_y - (int16_t)offset_y > comparison_height_down)
 		{

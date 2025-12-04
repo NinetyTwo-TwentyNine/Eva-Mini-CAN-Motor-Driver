@@ -2,26 +2,25 @@
 
 static const uint8_t element_count = 4;
 static char *calibration_lbl = "Калибровка", *calibration_check_lbl = "Проверка", *calibration_check_2_lbl = "калибровки", *back_lbl = "назад";
-static uint8_t calibration_id = 1, calibration_check_id = 0, calibration_check_2_id = 2, back_id = 3;
-static uint8_t calibration_tab_id = 1, calibration_check_tab_id = 0, calibration_check_2_tab_id = 2, back_tab_id = 3;
-static uint8_t xpos[] = { 8, 8, 8, 8 };
-static uint8_t ypos[] = { 4, 22, 34, 52 };
+static const uint8_t calibration_id = 1, calibration_check_id = 0, calibration_check_2_id = 2, back_id = 3;
+static const uint8_t calibration_tab_id = 1, calibration_check_tab_id = 0, calibration_check_2_tab_id = 2, back_tab_id = 3;
+static uint8_t xpos[element_count] = { 8, 8, 8, 8 };
+static uint8_t ypos[element_count] = { 4, 22, 34, 52 };
 
 static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
+	if (element->visual == NULL || element->visual->id == 0) return;
+	
 	switch(press_type)
 	{
 		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
 			break;
 		case PRESS_TYPE_OK:
-			if (element->visual->id == 0)
-				break;
-			
-			if (element->visual->id == back_id)
+			switch(element->visual->id)
 			{
-				UI_BuildStartMenu(screen);
+				case calibration_id: UI_BuildCalibrationMenu(screen); break;
+				case back_id: UI_BuildStartMenu(screen); break;
 			}
-			break;
 		case PRESS_TYPE_OTHER:
 			break;
 		default: return;

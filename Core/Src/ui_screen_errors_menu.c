@@ -3,10 +3,10 @@
 static const uint8_t element_count = 12;
 static char *bunker_error_lbl = "Бункер пуст: напол", *fan_error_lbl = "Ошибка вентилятора:", *motor_error_lbl = "Ошибка мотора: отсут", *can_error_lbl = "Ошибка мотора: отсут", *speed_error_lbl = "Ошибка скорости: ско", *quota_error_lbl = "Ошибка высева: норма";
 static char *bunker_error_2_lbl = "ните бункер", *fan_error_2_lbl = "скорость вне рамок", *motor_error_2_lbl = "ствует подключение", *can_error_2_lbl = "CAN сигнал", *speed_error_2_lbl = "рость вне рамок", *quota_error_2_lbl = "не равна заданной";
-static uint8_t bunker_error_id = 1, fan_error_id = 2, motor_error_id = 3, can_error_id = 4, speed_error_id = 5, quota_error_id = 6;
-static uint8_t bunker_error_tab_id = 1, fan_error_tab_id = 2, motor_error_tab_id = 3, can_error_tab_id = 4, speed_error_tab_id = 5, quota_error_tab_id = 6;
-static uint8_t xpos[] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
-static uint8_t ypos[] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
+static const uint8_t bunker_error_id = 1, fan_error_id = 2, motor_error_id = 3, can_error_id = 4, speed_error_id = 5, quota_error_id = 6;
+static const uint8_t bunker_error_tab_id = 1, fan_error_tab_id = 2, motor_error_tab_id = 3, can_error_tab_id = 4, speed_error_tab_id = 5, quota_error_tab_id = 6;
+static uint8_t xpos[element_count] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
+static uint8_t ypos[element_count] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
 
 static void ErrorsMenu_ScreenCallback(UI_Screen* screen)
 {

@@ -2,23 +2,22 @@
 
 static const uint8_t element_count = 4;
 static char *fan_sensor_lbl = "Датчик вентилятора", *speed_sensor_lbl = "Датчик скорости", *quota_check_lbl = "Наработка", *back_lbl = "назад";
-static int8_t fan_sensor_id = 1, speed_sensor_id = 2, quota_check_id = 3, back_id = 4;
-static uint8_t xpos[] = { 4, 4, 4, 4 };
-static uint8_t ypos[] = { 4, 20, 36, 52 };
+static const uint8_t fan_sensor_id = 1, speed_sensor_id = 2, quota_check_id = 3, back_id = 4;
+static uint8_t xpos[element_count] = { 4, 4, 4, 4 };
+static uint8_t ypos[element_count] = { 4, 20, 36, 52 };
 
 static void OptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
+	if (element->visual == NULL || element->visual->id == 0) return;
+	
 	switch(press_type)
 	{
 		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
 			break;
 		case PRESS_TYPE_OK:
-			if (element->visual->id == 0)
-				break;
-			
-			if (element->visual->id == back_id)
+			switch (element->visual->id)
 			{
-				UI_BuildStartMenu(screen);
+				case back_id: UI_BuildStartMenu(screen); break;
 			}
 			break;
 		case PRESS_TYPE_OTHER:
@@ -33,7 +32,7 @@ void UI_BuildOptionsMenu(UI_Screen* screen)
 	ui_clearScreen(screen);
 	
 	char* labels[element_count] = { fan_sensor_lbl, speed_sensor_lbl, quota_check_lbl, back_lbl };
-	int8_t ids[element_count] = { fan_sensor_id, speed_sensor_id, quota_check_id, back_id };
+	uint8_t ids[element_count] = { fan_sensor_id, speed_sensor_id, quota_check_id, back_id };
 
   for (uint8_t i = 0; i < element_count; i++)
   {

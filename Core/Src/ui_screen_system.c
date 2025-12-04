@@ -75,6 +75,23 @@ UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type
     return e;
 }
 
+UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
+{
+    if (screen->interactables_count >= UI_MAX_ELEMENT_COUNT)
+        return NULL;
+		
+		UI_Element_Interactable* i = &(screen->interactables[screen->interactables_count++]);
+		memset(i, 0, sizeof(UI_Element_Interactable));
+		
+		i->id = 0;
+		
+    i->visual = v;
+		i->callback = callback;
+		i->context = screen;
+		
+		return i;
+}
+
 UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t tab_index, int8_t cursor_offset, char* text, uint8_t font)
 {
     UI_Element_Visual *e =
@@ -87,6 +104,12 @@ UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t c
     e->data.text.font = font;
 
     return e;
+}
+
+void ui_editText(UI_Element_Visual* e, char* new_text, uint8_t new_font)
+{
+	utf8rus(new_text, e->data.text.text);
+	e->data.text.font = new_font;
 }
 
 UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t w, uint8_t h, uint8_t* bitmap)
@@ -104,21 +127,35 @@ UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t
     return e;
 }
 
-UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
+void ui_editBitmap(UI_Element_Visual* e, uint8_t new_w, uint8_t new_h, uint8_t* new_bitmap)
 {
-    if (screen->interactables_count >= UI_MAX_ELEMENT_COUNT)
-        return NULL;
-		
-		UI_Element_Interactable* i = &(screen->interactables[screen->interactables_count++]);
-		memset(i, 0, sizeof(UI_Element_Interactable));
-		
-		i->id = 0;
-		
-    i->visual = v;
-		i->callback = callback;
-		i->context = screen;
-		
-		return i;
+  e->data.bitmap.w = new_w;
+  e->data.bitmap.h = new_h;
+	e->data.bitmap.data = new_bitmap;
+}
+
+UI_Element_Visual* ui_findVisualById(UI_Screen* screen, uint8_t id)
+{
+	for (uint8_t i = 0; i < screen->visuals_count; i++)
+	{
+		if (screen->visuals[i].id == id)
+		{
+			return &(screen->visuals[i]);
+		}
+	}
+	return NULL;
+}
+
+UI_Element_Interactable* ui_findInteractableById(UI_Screen* screen, uint8_t id)
+{
+	for (uint8_t i = 0; i < screen->interactables_count; i++)
+	{
+		if (screen->interactables[i].id == id)
+		{
+			return &(screen->interactables[i]);
+		}
+	}
+	return NULL;
 }
 
 
@@ -248,7 +285,7 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 			}
 			else
 			{
-				ui_hoverNext(screen, (interaction_type == PRESS_TYPE_UP)? 1 : 0);
+				ui_hoverNext(screen, (interaction_type == PRESS_TYPE_UP)? 0 : 1);
 			}
 			break;
 		case PRESS_TYPE_OK: case PRESS_TYPE_OTHER:

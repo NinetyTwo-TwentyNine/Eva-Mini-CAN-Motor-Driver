@@ -63,6 +63,7 @@ extern "C" {
 #include "ui_screen_seeder_options_menu.h"
 #include "ui_screen_errors_menu.h"
 #include "ui_screen_other_options_menu.h"
+#include "ui_screen_calibration_menu.h"
 
 /* USER CODE END Includes */
 
@@ -174,8 +175,8 @@ extern uint64_t mcp23_check_last_time;
 extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_output, mcp23_check_result_input, mcp23_check_result_success;
 
 
-#define MATRIX_POS_BUTTON_DOWN 00
-#define MATRIX_POS_BUTTON_UP 01
+#define MATRIX_POS_BUTTON_UP 00
+#define MATRIX_POS_BUTTON_DOWN 01
 #define MATRIX_POS_BUTTON_MENU 20
 #define MATRIX_POS_BUTTON_OK 21
 #define MATRIX_POS_BUTTON_POWER 11
