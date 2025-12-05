@@ -331,6 +331,11 @@ void TIM4_IRQHandler(void)
 					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i] = false;
 				}
 			}
+			
+			if (error_state_array[ERROR_STATE_PREACTIVE][i] && error_state_array[ERROR_STATE_ACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME / 2)
+			{
+				error_state_array[ERROR_STATE_PREACTIVE][i] = false; // Error source should constantly update preactive error state in order for the error to not go away after some time
+			}
 		}
 		
 		uint8_t should_start_notification = false, should_continue_notification = false, chosen_index;
@@ -367,10 +372,11 @@ void TIM4_IRQHandler(void)
 			if (time_diff % ERROR_NOTIFICATION_BEEP_TIME == 0)
 			{
 				((time_diff / ERROR_NOTIFICATION_BEEP_TIME) % 2) ? LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_9) : LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
-				if (time_diff / ERROR_NOTIFICATION_BEEP_TIME == (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
+				if (time_diff / ERROR_NOTIFICATION_BEEP_TIME >= (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
 				{
 					error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
 					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
+					LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_9);
 				}
 			}
 		}

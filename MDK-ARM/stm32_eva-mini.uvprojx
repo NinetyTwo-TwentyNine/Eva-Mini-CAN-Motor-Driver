@@ -565,6 +565,11 @@
               <FilePath>..\Core\Inc\ui_screen_system.h</FilePath>
             </File>
             <File>
+              <FileName>ui_utilities.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_utilities.h</FilePath>
+            </File>
+            <File>
               <FileName>ui_screen_start_menu.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\ui_screen_start_menu.h</FilePath>
@@ -628,6 +633,11 @@
               <FileName>ui_screen_system.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\ui_screen_system.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_utilities.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_utilities.c</FilePath>
             </File>
             <File>
               <FileName>ui_screen_start_menu.c</FileName>
