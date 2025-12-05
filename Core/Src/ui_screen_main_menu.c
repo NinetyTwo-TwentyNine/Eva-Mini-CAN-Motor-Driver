@@ -97,6 +97,6 @@ void UI_BuildMainMenu(UI_Screen* screen)
 	screen->should_draw_cursor = false;
   // Default hover index: None
 	
-	
+	main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
 }

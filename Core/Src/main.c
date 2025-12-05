@@ -75,11 +75,12 @@ UI_Screen main_screen = {0};
 uint8_t main_ui_on = false, ui_update_required = false;
 uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 
-uint8_t switch_to_start_menu_allowed = false, can_procedure_in_progress = false, main_functionality_active = false;
+uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = false, can_procedure_in_progress = false, main_functionality_active = false;
 
-uint32_t user_fan_speed_min = 0, user_fan_speed_max = 0, user_wheel_diameter = 0, user_wheel_pulses = 0, user_quota = 0, user_mass_per_turn = 0;
+uint32_t user_min_speed = 0, user_max_speed = 0, user_fan_speed_min = 0, user_fan_speed_max = 0, user_wheel_diameter = 0, user_wheel_pulses = 0, user_seeder_width = 0, user_quota = 0, user_mass_per_turn = 0;
+float current_can_motor_speed = 0;
 
-uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}};
+uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}, {0}};
 uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start[ERROR_COUNT_TOTAL] = {0};
 
 // Resources
@@ -126,15 +127,22 @@ static void MX_TIM4_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void sendCANPackage(uint8_t speed, uint8_t fractional_part, uint8_t direction)
+void sendCANPackage(float speed, uint8_t direction)
 {
+	uint8_t whole_part = floor(speed), fractional_part = round((speed - whole_part)*10); // 1 digit after the dot
+	if (fractional_part % 10 != fractional_part)
+	{
+		fractional_part %= 10;
+		whole_part += 1;
+	}
+	
 	uint8_t speedData[2];
-	parseMotorSpeed(direction, fractional_part, speed, speedData);
+	parseMotorSpeed(direction, fractional_part, whole_part, speedData);
 
 	uint8_t msg[8] = {0};
 	setMotorControl(speedData, 0x01700002, msg);
 	
-	uint8_t ok = LL_CAN_Send(0x16000001, msg, true);
+	uint8_t ok = LL_CAN_Send(CAN_MOTOR_ID, msg, true);
 	if (ok)
 	{
 		can_last_send_time = sys_timer;
@@ -251,7 +259,9 @@ int main(void)
 	
 	LL_CAN_Init(true);
 	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),10, 0));
-	NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn); 
+	NVIC_SetPriority(CAN1_SCE_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),10, 0));
+	NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
+	NVIC_EnableIRQ(CAN1_SCE_IRQn);
 	
 	LL_I2C_Enable(MCP23008_I2C);
 	mcp23008_write_register(MCP23008_REG_IODIR, MCP23008_PINS_SETUP);
@@ -282,7 +292,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		if (main_functionality_active && user_fan_speed_min != 0 && user_fan_speed_max != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0 && user_quota != 0 && user_mass_per_turn != 0)
+		if (main_functionality_active)
 		{
 			for (uint8_t sensor_num = 0; sensor_num < SENSOR_COUNT_MAX; sensor_num++)
 			{
@@ -291,10 +301,24 @@ int main(void)
 					sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
 					time_now = sys_timer;
 					sensor_last_check_time[sensor_num] = time_now;
+					
+					// TODO: perform sensor value out-of-range checks
 				}
 			}
 			
-			// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
+			if (user_min_speed != 0 && user_max_speed != 0 && user_fan_speed_min != 0 && user_fan_speed_max != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0 && user_seeder_width != 0 && user_quota != 0 && user_mass_per_turn != 0)
+			{
+				// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
+			}
+		}
+		else if (can_procedure_in_progress && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+		{
+			sendCANPackage(current_can_motor_speed, 0);
+		}
+		else if (can_should_send_test_package && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+		{
+			sendCANPackage(CAN_MOTOR_DEFAULT_SPEED_EMPTY, 0);
+			can_should_send_test_package = false;
 		}
 		
 		time_now = sys_timer;
@@ -328,6 +352,7 @@ int main(void)
 					case MATRIX_POS_BUTTON_POWER:
 						sequence_turnDisplayOn(!main_ui_on);
 					default:
+						/*
 						LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
 						LL_mDelay(60);
 						LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
@@ -335,6 +360,7 @@ int main(void)
 						LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
 						LL_mDelay(60);
 						LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
+						*/;
 				}
 			}
 		}

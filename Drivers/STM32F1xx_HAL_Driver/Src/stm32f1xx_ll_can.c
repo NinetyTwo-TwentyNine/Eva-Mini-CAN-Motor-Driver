@@ -82,6 +82,7 @@ void LL_CAN_Init(uint8_t remap) {
 					
 		//CAN1->BTR |= CAN_BTR_LBKM; // Loop back mode
 		CAN1->MCR |= CAN_MCR_ABOM; // Additional robustness
+		CAN1->MCR |= CAN_MCR_NART;   // No Automatic Retransmission
 		
 		CAN1->IER |= CAN_IER_TMEIE | CAN_IER_ERRIE; // interrupts
 

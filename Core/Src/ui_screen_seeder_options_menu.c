@@ -71,5 +71,6 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
   if (screen->visuals_count > 0)
     screen->hovered = &screen->visuals[0];
 	
+	main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
 }

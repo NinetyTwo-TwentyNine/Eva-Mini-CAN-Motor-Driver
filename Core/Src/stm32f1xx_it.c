@@ -310,8 +310,10 @@ void TIM4_IRQHandler(void)
 	{
 		LL_TIM_ClearFlag_UPDATE(TIM4);
 		
+		GPIO_TypeDef* buzzer_port = BUZZER_PORT;
+		uint32_t buzzer_pin_mask = BUZZER_PIN;
+		
 		uint64_t time_now = sys_timer;
-		//time_now -= time_now % 10;
 		
 		for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
 		{
@@ -327,7 +329,7 @@ void TIM4_IRQHandler(void)
 				error_state_array[ERROR_NOTIFICATION_COMPLETE][i] = false;
 				if (error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i])
 				{
-					LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_9);
+					LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
 					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i] = false;
 				}
 			}
@@ -349,7 +351,7 @@ void TIM4_IRQHandler(void)
 				should_start_notification = false;
 				break;
 			}
-			else if (error_state_array[ERROR_STATE_ACTIVE][i])
+			else if (error_state_array[ERROR_STATE_ACTIVE][i] && !error_state_array[ERROR_NOTIFICATION_COMPLETE][i])
 			{
 				if ((time_now - error_last_activated[i]) > time_comparison)
 				{
@@ -364,20 +366,26 @@ void TIM4_IRQHandler(void)
 		{
 			error_notification_start[chosen_index] = time_now;
 			error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = true;
-			LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
+			error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] = 0;
+			LL_GPIO_SetOutputPin(buzzer_port, buzzer_pin_mask);
 		}
 		else if (should_continue_notification)
 		{
-			uint64_t time_diff = time_now - error_notification_start[chosen_index];
-			if (time_diff % ERROR_NOTIFICATION_BEEP_TIME == 0)
+			uint32_t time_diff = time_now - error_notification_start[chosen_index];
+			if (error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] >= (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
 			{
-				((time_diff / ERROR_NOTIFICATION_BEEP_TIME) % 2) ? LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_9) : LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
-				if (time_diff / ERROR_NOTIFICATION_BEEP_TIME >= (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
-				{
-					error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
-					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
-					LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_9);
-				}
+				error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
+				error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
+				LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
+			}
+			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * (error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] + 1))
+			{
+				LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
+				error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index]++;
+			}
+			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index])
+			{
+				LL_GPIO_SetOutputPin(buzzer_port, buzzer_pin_mask);
 			}
 		}
 		
@@ -471,19 +479,19 @@ void EXTI5_IRQHandler(void)
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
     uint32_t tsr = CAN1->TSR;
-
+	
     // Mailbox 0 completed
     if (tsr & CAN_TSR_RQCP0)
     {
         if (tsr & CAN_TSR_TXOK0)
         {
-            // TX SUCCESS
-						can_last_send_success = true;
+          // TX SUCCESS
+					can_last_send_success = true;
         }
         else
         {
-            // TX ERROR
-						can_last_send_success = false;
+          // TX ERROR
+					can_last_send_success = false;
         }
 				if (!error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN] && !can_last_send_success)
 				{
@@ -512,7 +520,13 @@ void CAN1_SCE_IRQHandler(void)
     if (CAN1->MSR & CAN_MSR_ERRI)
     {
         // Check ESR for the specific error if needed
-        
+				can_last_send_success = false;
+				if (!error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN])
+				{
+					error_last_activated[ERROR_TYPE_CAN] = sys_timer;
+				}
+				error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN] = true;
+			
         // Required: clear error interrupt pending
         CAN1->MSR = CAN_MSR_ERRI;
     }

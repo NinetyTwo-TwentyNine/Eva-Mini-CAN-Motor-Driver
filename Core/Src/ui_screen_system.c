@@ -109,7 +109,10 @@ UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t c
 void ui_editText(UI_Element_Visual* e, char* new_text, uint8_t new_font)
 {
 	utf8rus(new_text, e->data.text.text);
-	e->data.text.font = new_font;
+	if (new_font)
+	{
+		e->data.text.font = new_font;
+	}
 }
 
 UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t w, uint8_t h, uint8_t* bitmap)
@@ -288,7 +291,7 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 				ui_hoverNext(screen, (interaction_type == PRESS_TYPE_UP)? 0 : 1);
 			}
 			break;
-		case PRESS_TYPE_OK: case PRESS_TYPE_OTHER:
+		case PRESS_TYPE_OK:
 			if (screen->hovered != NULL)
 			{
 				for (uint8_t i = 0; i < screen->interactables_count; i++)
@@ -301,6 +304,7 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 				}
 			}
 			break;
+		case PRESS_TYPE_OTHER:
 		default:
 			return;
 	}

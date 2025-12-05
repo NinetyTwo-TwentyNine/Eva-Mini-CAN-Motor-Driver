@@ -48,6 +48,7 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "stm32f1xx_ll_can.h" // Our own LL CAN driver replacement for STM32F103
 
@@ -182,6 +183,10 @@ extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_out
 #define MATRIX_POS_BUTTON_POWER 11
 
 // CAN
+#define CAN_TRANSMISSION_INTERVAL 100
+#define CAN_MOTOR_ID 0x16000001
+#define CAN_MOTOR_DEFAULT_SPEED_EMPTY 30 // Just enough for one transmission to make a spin
+
 extern uint8_t can_last_send_success;
 extern uint64_t can_last_send_time;
 
@@ -194,9 +199,10 @@ extern UI_Screen main_screen;
 extern uint64_t ui_last_update_time, ui_last_callback_time;
 extern uint8_t ui_update_required, main_ui_on;
 
-extern uint8_t switch_to_start_menu_allowed, can_procedure_in_progress, main_functionality_active;
+extern uint8_t switch_to_start_menu_allowed, can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
 
-extern uint32_t user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, user_wheel_pulses, user_quota, user_mass_per_turn;
+extern uint32_t user_min_speed, user_max_speed, user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, user_wheel_pulses, user_seeder_width, user_quota, user_mass_per_turn;
+extern float current_can_motor_speed;
 
 #define ERROR_COUNT_TOTAL 6
 #define ERROR_TYPE_FAN 0
@@ -207,17 +213,21 @@ extern uint32_t user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, use
 #define ERROR_TYPE_EMPTY 5
 
 #define ERROR_DETERMINATION_TIME 600
-#define ERROR_NOTIFICATION_BEEP_TIME 200 // MUST be divideable by TIM4 interval (10ms)
+#define ERROR_NOTIFICATION_BEEP_TIME 200
 #define ERROR_NOTIFICATION_BEEP_COUNT 4
 
-#define ERROR_STATE_ARRAY_COUNT 4
+#define ERROR_STATE_ARRAY_COUNT 5
 #define ERROR_STATE_PREACTIVE 0
 #define ERROR_STATE_ACTIVE 1
 #define ERROR_NOTIFICATION_COMPLETE 2
 #define ERROR_NOTIFICATION_IN_PROGRESS 3
+#define ERROR_NOTIFICATION_BEEP_COUNTER 4
 
 extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
 extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start[ERROR_COUNT_TOTAL];
+
+#define BUZZER_PORT GPIOA
+#define BUZZER_PIN LL_GPIO_PIN_9
 
 // Resources
 #define LOGO_ERROR_ALERT_SIZE 20
