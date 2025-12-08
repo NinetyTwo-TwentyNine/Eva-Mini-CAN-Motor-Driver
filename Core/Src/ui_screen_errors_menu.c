@@ -1,16 +1,127 @@
 #include <ui_screen_errors_menu.h>
 
-static const uint8_t element_count = 12;
-static char *bunker_error_lbl = "Бункер пуст: напол", *fan_error_lbl = "Ошибка вентилятора:", *motor_error_lbl = "Ошибка мотора: отсут", *can_error_lbl = "Ошибка мотора: отсут", *speed_error_lbl = "Ошибка скорости: ско", *quota_error_lbl = "Ошибка высева: норма";
-static char *bunker_error_2_lbl = "ните бункер", *fan_error_2_lbl = "скорость вне рамок", *motor_error_2_lbl = "ствует подключение", *can_error_2_lbl = "CAN сигнал", *speed_error_2_lbl = "рость вне рамок", *quota_error_2_lbl = "не равна заданной";
-static const uint8_t bunker_error_id = 1, fan_error_id = 2, motor_error_id = 3, can_error_id = 4, speed_error_id = 5, quota_error_id = 6;
-static const uint8_t bunker_error_tab_id = 1, fan_error_tab_id = 2, motor_error_tab_id = 3, can_error_tab_id = 4, speed_error_tab_id = 5, quota_error_tab_id = 6;
-static uint8_t xpos[element_count] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
-static uint8_t ypos[element_count] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
+#define EM_ELEMENT_COUNT 12
+#define EM_POS_BUNKER_ERROR 0
+#define EM_POS_FAN_ERROR 2
+#define EM_POS_MOTOR_ERROR 4
+#define EM_POS_CAN_ERROR 6
+#define EM_POS_SPEED_ERROR 8
+#define EM_POS_QUOTA_ERROR 10
+
+static char *error_labels[EM_ELEMENT_COUNT] = { "Бункер пуст: напол", "ните бункер", "Ошибка вентилятора:", "скорость вне рамок", "Ошибка мотора: отсут", "ствует подключение", "Ошибка мотора: отсут", "свтует CAN сигнал", "Ошибка скорости: ско", "рость вне рамок", "Ошибка высева: норма", "не равна заданной" };
+static uint8_t xpos[EM_ELEMENT_COUNT] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
+static uint8_t ypos[EM_ELEMENT_COUNT] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
+
+static int16_t EMHelper_GetErrorPosFromType(uint8_t error_type)
+{
+	int16_t error_pos = -1;
+	
+	if (error_type > ERROR_COUNT_TOTAL)
+	{
+		return error_pos;
+	}
+	
+	switch(error_type)
+	{
+		case ERROR_TYPE_EMPTY:
+			return EM_POS_BUNKER_ERROR;
+		case ERROR_TYPE_FAN:
+			return EM_POS_FAN_ERROR;
+		case ERROR_TYPE_MOTOR:
+			return EM_POS_MOTOR_ERROR;
+		case ERROR_TYPE_CAN:
+			return EM_POS_CAN_ERROR;
+		case ERROR_TYPE_SPEED:
+			return EM_POS_SPEED_ERROR;
+		case ERROR_TYPE_QUOTA:
+			return EM_POS_QUOTA_ERROR;
+		default:
+			return error_pos;
+	}
+}
+
 
 static void ErrorsMenu_ScreenCallback(UI_Screen* screen)
 {
-	// TODO: handle error updates in real time
+	uint8_t errors_free = true;
+	
+	for (uint8_t i = 0; i < screen->visuals_count; i++)
+	{
+		ui_editText(&(screen->visuals[i]), "", 0);
+		screen->visuals[i].tab_index = 0;
+	}
+	
+	uint8_t error_count = 0;
+	int16_t error_curr_array[ERROR_COUNT_TOTAL];
+	for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
+	{
+		if (error_state_array[ERROR_STATE_ACTIVE][i])
+		{
+			errors_free = false;
+			
+			error_curr_array[error_count++] = i;
+		}
+	}
+	
+	uint8_t should_sort_again = true;
+	while (should_sort_again)
+	{
+		should_sort_again = false;
+		for (uint8_t i = 0; i < error_count - 1; i++)
+		{
+			if (error_last_activated[error_curr_array[i]] < error_last_activated[error_curr_array[i + 1]])
+			{
+				should_sort_again = true;
+				swap(error_curr_array[i], error_curr_array[i + 1]);
+			}
+		}
+	}
+	
+	for (uint8_t i = 0; i < error_count; i++)
+	{
+		int16_t error_pos = EMHelper_GetErrorPosFromType(error_curr_array[i]);
+		if (error_pos == -1) continue;
+
+		char *error_text1, *error_text2;
+    error_text1 = error_labels[error_pos];
+    error_text2 = error_labels[error_pos + 1];
+      
+    ui_editText(&(screen->visuals[i * 2]), error_text1, 0);
+    ui_editText(&(screen->visuals[i * 2 + 1]), error_text2, 0);
+		
+		screen->visuals[i * 2 + 1].tab_index = i + 1;
+	}
+	
+	if (errors_free)
+	{
+		ui_editText(&(screen->visuals[0]), "Сейчас ошибок нету", 0);
+		screen->visuals[0].tab_index = 1;
+		screen->hovered = &(screen->visuals[0]);
+	}
+	else
+	{
+		if (screen->hovered == NULL || screen->hovered->tab_index == 0)
+		{
+			if (screen->hovered != NULL && screen->hovered->id % 2 == 0)
+			{
+				UI_Element_Visual *e = ui_findVisualById(screen, screen->hovered->id + 1);
+				if (e == NULL || e->tab_index == 0)
+				{
+					ui_hoverNext(screen, 0);
+				}
+				else
+				{
+					screen->hovered = e;
+				}
+			}
+			else
+			{
+				ui_hoverNext(screen, 0);
+			}
+		}
+	}
+	
+	ui_update_required = true;
 }
 
 
@@ -18,35 +129,31 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
 	
-	char* labels[element_count] = { bunker_error_lbl, bunker_error_2_lbl, fan_error_lbl, fan_error_2_lbl, motor_error_lbl, motor_error_2_lbl, can_error_lbl, can_error_2_lbl, speed_error_lbl, speed_error_2_lbl, quota_error_lbl, quota_error_2_lbl };
-	uint8_t ids[element_count / 2] = { bunker_error_id, fan_error_id, motor_error_id, can_error_id, speed_error_id, quota_error_id };
-	uint8_t tab_ids[element_count / 2] = { bunker_error_tab_id, fan_error_tab_id, motor_error_tab_id, can_error_tab_id, speed_error_tab_id, quota_error_tab_id };
-	
-  for (uint8_t i = 0; i < element_count / 2; i++)
+  for (uint8_t i = 0; i < EM_ELEMENT_COUNT / 2; i++)
   {
     // ---------------- Visual ----------------
     UI_Element_Visual* vis = ui_addText(
         screen,
-        xpos[i * 2],                 // pos_x
+        xpos[i * 2],            // pos_x
         ypos[i * 2],            // pos_y
 				WHITE,							// color
 			  0,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  labels[i * 2],          		// text
+			  "",          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
     // Optional: assign visual ID
-		vis->id = 0;
+		vis->id = i * 2;
 		
     UI_Element_Visual* vis2 = ui_addText(
         screen,
         xpos[i * 2 + 1],                 // pos_x
         ypos[i * 2 + 1],            // pos_y
 				WHITE,							// color
-			  tab_ids[i],              // tab index
+			  0,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  labels[i * 2 + 1],          		// text
+			  "",          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 		
@@ -54,14 +161,13 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 		vis2->offset_y_up = CHAR_BASE_HEIGHT * 3 / 2;
 
     // Optional: assign visual ID
-		vis2->id = ids[i];
+		vis2->id = i * 2 + 1;
   }
 
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	
-  // Default hover index
-	ui_hoverNext(screen, 1);
+  // Default hover index: None
 	
 	screen->callback_interval = 100;
 	screen->general_callback = ErrorsMenu_ScreenCallback;

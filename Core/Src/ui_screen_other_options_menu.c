@@ -1,10 +1,12 @@
 #include <ui_screen_other_options_menu.h>
 
-static const uint8_t element_count = 4;
-static char *fan_sensor_lbl = "Датчик вентилятора", *speed_sensor_lbl = "Датчик скорости", *quota_check_lbl = "Наработка", *back_lbl = "назад";
+#define OOM_ELEMENT_COUNT 4
+
+static char* labels[OOM_ELEMENT_COUNT] = { "Датчик вентилятора", "Датчик скорости", "Наработка", "назад" };
 static const uint8_t fan_sensor_id = 1, speed_sensor_id = 2, quota_check_id = 3, back_id = 4;
-static uint8_t xpos[element_count] = { 4, 4, 4, 4 };
-static uint8_t ypos[element_count] = { 4, 20, 36, 52 };
+static uint8_t xpos[OOM_ELEMENT_COUNT] = { 4, 4, 4, 4 };
+static uint8_t ypos[OOM_ELEMENT_COUNT] = { 4, 20, 36, 52 };
+static uint8_t ids[OOM_ELEMENT_COUNT] = { fan_sensor_id, speed_sensor_id, quota_check_id, back_id };
 
 static void OptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
@@ -26,11 +28,8 @@ static void OptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type p
 void UI_BuildOptionsMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
-	
-	char* labels[element_count] = { fan_sensor_lbl, speed_sensor_lbl, quota_check_lbl, back_lbl };
-	uint8_t ids[element_count] = { fan_sensor_id, speed_sensor_id, quota_check_id, back_id };
 
-  for (uint8_t i = 0; i < element_count; i++)
+  for (uint8_t i = 0; i < OOM_ELEMENT_COUNT; i++)
   {
     // ---------------- Visual ----------------
     UI_Element_Visual* vis = ui_addText(

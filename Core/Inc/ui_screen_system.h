@@ -66,6 +66,7 @@ struct Struct_UI_Element_Interactable {
 	uint8_t id;
 	
 	UI_Element_Visual* visual;
+	
 	UI_Callback main_callback;
 	UI_Callback selection_callback;
 	UI_Callback onselect_callback;
@@ -107,7 +108,6 @@ UI_Element_Visual* ui_addBitmap(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t
 void ui_editBitmap(UI_Element_Visual* e, uint8_t new_w, uint8_t new_h, uint8_t* new_bitmap);
 
 UI_Element_Visual* ui_findVisualById(UI_Screen* screen, uint8_t id);
-UI_Element_Interactable* ui_findInteractableById(UI_Screen* screen, uint8_t id);
 UI_Element_Interactable* ui_findInteractableByVisual(UI_Screen* screen, UI_Element_Visual* vis);
 
 void ui_hoverNext(UI_Screen* screen, uint8_t direction);

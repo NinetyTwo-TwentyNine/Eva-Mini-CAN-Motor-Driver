@@ -165,18 +165,6 @@ UI_Element_Visual* ui_findVisualById(UI_Screen* screen, uint8_t id)
 	return NULL;
 }
 
-UI_Element_Interactable* ui_findInteractableById(UI_Screen* screen, uint8_t id)
-{
-	for (uint8_t i = 0; i < screen->interactables_count; i++)
-	{
-		if (screen->interactables[i].id == id)
-		{
-			return &(screen->interactables[i]);
-		}
-	}
-	return NULL;
-}
-
 UI_Element_Interactable* ui_findInteractableByVisual(UI_Screen* screen, UI_Element_Visual* vis)
 {
 	for (uint8_t i = 0; i < screen->interactables_count; i++)

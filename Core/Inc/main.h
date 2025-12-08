@@ -65,6 +65,7 @@ extern "C" {
 #include "ui_screen_errors_menu.h"
 #include "ui_screen_other_options_menu.h"
 #include "ui_screen_calibration_menu.h"
+#include "ui_screen_calibration_check_menu.h"
 
 /* USER CODE END Includes */
 

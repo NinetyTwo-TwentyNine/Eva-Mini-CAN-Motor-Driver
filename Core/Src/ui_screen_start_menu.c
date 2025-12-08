@@ -1,10 +1,12 @@
 #include <ui_screen_start_menu.h>
 
-static const uint8_t element_count = 4;
-static char *main_menu_lbl = "Главная", *seeder_options_lbl = "Настройки высева", *errors_lbl = "Ошибки", *other_options_lbl = "Настройки";
+#define SM_ELEMENT_COUNT 4
+
+static char *labels[SM_ELEMENT_COUNT] = { "Главная", "Настройки высева", "Ошибки", "Настройки" };
 static const uint8_t main_menu_id = 1, seeder_options_id = 2, errors_id = 3, other_options_id = 4;
-static uint8_t xpos[element_count] = { 40, 16, 44, 36 };
-static uint8_t ypos[element_count] = { 4, 20, 36, 52 };
+static uint8_t xpos[SM_ELEMENT_COUNT] = { 40, 16, 44, 36 };
+static uint8_t ypos[SM_ELEMENT_COUNT] = { 4, 20, 36, 52 };
+static uint8_t label_ids[SM_ELEMENT_COUNT] = { main_menu_id, seeder_options_id, errors_id, other_options_id };
 
 static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
@@ -29,11 +31,8 @@ static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type pre
 void UI_BuildStartMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
-	
-	char* labels[element_count] = { main_menu_lbl, seeder_options_lbl, errors_lbl, other_options_lbl };
-	uint8_t ids[element_count] = { main_menu_id, seeder_options_id, errors_id, other_options_id };
 
-  for (uint8_t i = 0; i < element_count; i++)
+  for (uint8_t i = 0; i < SM_ELEMENT_COUNT; i++)
   {
     // ---------------- Visual ----------------
     UI_Element_Visual* vis = ui_addText(
@@ -48,7 +47,7 @@ void UI_BuildStartMenu(UI_Screen* screen)
     );
 
     // Optional: assign visual ID
-		vis->id = ids[i];
+		vis->id = label_ids[i];
 
     // ---------------- Interactable ----------------
 		UI_Element_Interactable* inter = ui_bindInteractable(

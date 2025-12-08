@@ -1,11 +1,13 @@
 #include <ui_screen_seeder_options_menu.h>
 
-static const uint8_t element_count = 4;
-static char *calibration_lbl = "Калибровка", *calibration_check_lbl = "Проверка", *calibration_check_2_lbl = "калибровки", *back_lbl = "назад";
+#define SOM_ELEMENT_COUNT 4
+
+static char* labels[SOM_ELEMENT_COUNT] = { "Калибровка", "Проверка", "калибровки", "назад" };
 static const uint8_t calibration_id = 1, calibration_check_id = 0, calibration_check_2_id = 2, back_id = 3;
-static const uint8_t calibration_tab_id = 1, calibration_check_tab_id = 0, calibration_check_2_tab_id = 2, back_tab_id = 3;
-static uint8_t xpos[element_count] = { 8, 8, 8, 8 };
-static uint8_t ypos[element_count] = { 4, 22, 34, 52 };
+static uint8_t xpos[SOM_ELEMENT_COUNT] = { 8, 8, 8, 8 };
+static uint8_t ypos[SOM_ELEMENT_COUNT] = { 4, 22, 34, 52 };
+static uint8_t tab_ids[SOM_ELEMENT_COUNT] = { 1, 0, 2, 3 };
+static uint8_t ids[SOM_ELEMENT_COUNT] = { calibration_id, calibration_check_id, calibration_check_2_id, back_id };
 
 static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
@@ -17,6 +19,7 @@ static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_
 			switch(element->visual->id)
 			{
 				case calibration_id: UI_BuildCalibrationMenu(screen); break;
+				case calibration_check_id: UI_BuildCalibrationCheckMenu(screen); break;
 				case back_id: UI_BuildStartMenu(screen); break;
 			}
 			break;
@@ -28,12 +31,8 @@ static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_
 void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
-	
-	char* labels[element_count] = { calibration_lbl, calibration_check_lbl, calibration_check_2_lbl, back_lbl };
-	int8_t ids[element_count] = { calibration_id, calibration_check_id, calibration_check_2_id, back_id };
-	int8_t tab_ids[element_count] = { calibration_tab_id, calibration_check_tab_id, calibration_check_2_tab_id, back_tab_id };
 
-  for (uint8_t i = 0; i < element_count; i++)
+  for (uint8_t i = 0; i < SOM_ELEMENT_COUNT; i++)
   {
     // ---------------- Visual ----------------
     UI_Element_Visual* vis = ui_addText(

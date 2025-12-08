@@ -1,18 +1,20 @@
 #include <ui_screen_main_menu.h>
 
 static const uint8_t element_text_count = 4;
-static char *norm_text_lbl = "Норма:", *fan_text_lbl = "В:", *motor_text_lbl = "М:", *area_text_lbl = "S:";
+static char *texts[element_text_count] = { "Норма:", "В:", "М:", "S:" };
 static uint8_t text_xpos[element_text_count] = { 4, 4, 4, 80 };
 static uint8_t text_ypos[element_text_count] = { 20, 36, 52, 52 };
 
 static const uint8_t element_val_count = 6;
 static const uint8_t norm_val_id = 1, fan_val_id = 2, motor_val_id = 3, area_val_id = 4, error_val_id = 5, seeder_val_id = 6;
-static char *norm_val_lbl = "000(000)", *fan_val_lbl = "0000", *motor_val_lbl = "000", *area_val_lbl = "000", *error_val_lbl = "Бункер пуст", *seeder_val_lbl = "Т";
+static char *val_defaults[element_val_count] = { "000(000)", "0000", "000", "000", "Бункер пуст", "Т" };
 static uint8_t val_xpos[element_val_count] = { 42, 16, 16, 92, 16, 115 };
 static uint8_t val_ypos[element_val_count] = { 20, 36, 52, 52, 4, 36 };
 
 static const uint8_t element_type_count = 4;
-static char *norm_type_lbl = "кг/га", *fan_type_lbl = "об/мин", *motor_type_lbl = "об/мин", *area_type_lbl = "га";
+static char *types[] = { "кг/га", "об/мин", "об/мин", "га" };
+
+static uint8_t val_ids[element_val_count] = { norm_val_id, fan_val_id, motor_val_id, area_val_id, error_val_id, seeder_val_id };
 
 
 static const uint8_t element_icon_count = 2;
@@ -23,18 +25,12 @@ static uint8_t icon_height[element_icon_count] = {LOGO_ERROR_ALERT_HEIGHT, LOGO_
 static uint8_t icon_xpos[element_icon_count] = { 4, 105 };
 static uint8_t icon_ypos[element_icon_count] = { 4, 36 };
 
+static uint8_t icon_ids[element_icon_count] = { error_icon_id, seeder_icon_id };
+
 
 void UI_BuildMainMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
-
-	char* texts[element_text_count] = { norm_text_lbl, fan_text_lbl, motor_text_lbl, area_text_lbl };
-	char* types[element_type_count] = { norm_type_lbl, fan_type_lbl, motor_type_lbl, area_type_lbl };
-	
-	char* val_defaults[element_val_count] = { norm_val_lbl, fan_val_lbl, motor_val_lbl, area_val_lbl, error_val_lbl, seeder_val_lbl };
-	uint8_t val_ids[element_val_count] = { norm_val_id, fan_val_id, motor_val_id, area_val_id, error_val_id, seeder_val_id };
-	
-	uint8_t icon_ids[element_icon_count] = { error_icon_id, seeder_icon_id };
 
   for (uint8_t i = 0; i < element_text_count; i++)
   {
