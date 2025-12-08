@@ -145,36 +145,45 @@ static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 	if (can_procedure_in_progress)
 	{
 		total_motor_movement_time += screen->callback_interval;
-		if (time_sec_val == 0 && time_min_val == 0)
+		if (total_motor_movement_time % 1000 == 0)
 		{
-			can_procedure_in_progress = false;
-			UI_Element_Visual *e = CMHelper_SetElementFunctionality(screen, CM_POS_BEGIN_CALIBRATION, 0, 0);;
-			if (e != NULL)
+			if (time_sec_val != 0 || time_min_val != 0)
 			{
-				ui_editText(e, labels[CM_POS_BEGIN_CALIBRATION], 0);
-			}
-			
-			CMHelper_SetElementFunctionality(screen, CM_POS_MASS_ITEM, 1, 1);
-			if (mass_val > 0)
-			{
-				CMHelper_SetElementFunctionality(screen, CM_POS_COUNT_PARAMS, 1, 1);
-			}
-			
-			ui_update_required = true;
-		}
-		else if (total_motor_movement_time % 1000 == 0)
-		{
-			if (time_sec_val == 0)
-			{
-				time_sec_val = 59;
-				time_min_val -= 1;
-			}
-			else
-			{
-				time_sec_val -= 1;
+				if (time_sec_val == 0)
+				{
+					time_sec_val = 59;
+					time_min_val -= 1;
+				}
+				else
+				{
+					time_sec_val -= 1;
+				}
 			}
 			CMHelper_ConvertValToText(screen, CM_POS_TIME_MIN_VAL);
 			CMHelper_ConvertValToText(screen, CM_POS_TIME_SEC_VAL);
+			
+			if (time_sec_val == 0 && time_min_val == 0)
+			{
+				can_procedure_in_progress = false;
+				
+				CMHelper_SetElementFunctionality(screen, CM_POS_MASS_ITEM, 1, 1);
+				if (mass_val > 0)
+				{
+					CMHelper_SetElementFunctionality(screen, CM_POS_COUNT_PARAMS, 1, 1);
+				}
+				
+				if (screen->hovered != NULL && screen->hovered->id == begin_calibration_id)
+				{
+					ui_hoverNext(screen, 1);
+				}
+				
+				UI_Element_Visual *e = CMHelper_SetElementFunctionality(screen, CM_POS_BEGIN_CALIBRATION, 0, 0);
+				if (e != NULL)
+				{
+					ui_editText(e, labels[CM_POS_BEGIN_CALIBRATION], 0);
+				}
+			}
+			
 			ui_update_required = true;
 		}
 	}
@@ -224,6 +233,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					
 					CMHelper_SetElementFunctionality(screen, CM_POS_BACK, 0, 1);
 					
+					ui_hoverNext(screen, 1);
 					CMHelper_SetElementFunctionality(screen, CM_POS_FILL_MOTOR, 0, 0);
 					
 					switch_to_start_menu_allowed = false;
@@ -235,7 +245,6 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					if (can_procedure_in_progress)
 					{
 						CMHelper_SetElementFunctionality(screen, CM_POS_MASS_ITEM, 1, 1);
-						
 						if (mass_val > 0)
 						{
 							CMHelper_SetElementFunctionality(screen, CM_POS_COUNT_PARAMS, 1, 1);
@@ -251,12 +260,11 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					{
 						current_can_motor_speed = ( (float)spins_val / ((float)initial_time_total / 60) );
 						
-						uint8_t deselection_array[] = { CM_POS_SPINS_ITEM, CM_POS_TIME_ITEM, CM_POS_MASS_ITEM };
+						uint8_t deselection_array[] = { CM_POS_SPINS_ITEM, CM_POS_TIME_ITEM };
 						CMHelper_SetElementFunctionality_Array(screen, deselection_array, sizeof(deselection_array), 1, 0);
 						
-						CMHelper_SetElementFunctionality(screen, CM_POS_COUNT_PARAMS, 0, 1);
-						
-						CMHelper_SetElementFunctionality(screen, CM_POS_BACK, 0, 1);
+						uint8_t deselection_array_2[] = { CM_POS_MASS_ITEM, CM_POS_COUNT_PARAMS, CM_POS_BACK };
+						CMHelper_SetElementFunctionality_Array(screen, deselection_array_2, sizeof(deselection_array_2), 0, 1);
 						
 						switch_to_start_menu_allowed = false;
 						can_procedure_in_progress = true;

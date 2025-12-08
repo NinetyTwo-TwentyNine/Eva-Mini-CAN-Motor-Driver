@@ -8,10 +8,10 @@ void parseMotorSpeed(uint8_t direction, uint8_t fractional_part, uint8_t rotatio
     // Calculate speed based on rotation direction
     if (direction == 0xFF) {
         buf_speed[0] = (uint16_t)rotation_speed;
-        buf_speed[1] = 4096 - buf_speed[0] * 10 + fractional_part;
+        buf_speed[1] = 4096 - (buf_speed[0] * 10 + fractional_part);
     } else if (direction == 0x00) {
         buf_speed[0] = (uint16_t)rotation_speed;
-        buf_speed[1] = buf_speed[0] * 10;
+        buf_speed[1] = buf_speed[0] * 10 + fractional_part;
     }
 
 		// Convert speed to hex string
