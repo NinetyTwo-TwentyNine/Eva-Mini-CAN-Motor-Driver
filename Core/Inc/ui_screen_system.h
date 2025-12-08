@@ -66,7 +66,9 @@ struct Struct_UI_Element_Interactable {
 	uint8_t id;
 	
 	UI_Element_Visual* visual;
-	UI_Callback callback;
+	UI_Callback main_callback;
+	UI_Callback selection_callback;
+	UI_Callback onselect_callback;
 	
 	UI_Screen* context;
 };
@@ -96,7 +98,7 @@ char* utf8rus(const char* source, char* target);
 void ui_clearScreen(UI_Screen* screen);
 
 UI_Element_Visual* ui_addVisualElement(UI_Screen* screen, UI_Element_Visual_Type type, uint8_t pos_x, uint8_t pos_y, uint8_t color, uint8_t tab_index, int8_t cursor_offset);
-UI_Element_Interactable* ui_bindInteractable(UI_Screen* screen, UI_Element_Visual* v, UI_Callback callback);
+UI_Element_Interactable* ui_bindInteractable(UI_Screen* screen, UI_Element_Visual* v, UI_Callback main_callback, UI_Callback selection_callback, UI_Callback onselect_callback);
 
 UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t tab_index, int8_t cursor_offset, char* text, uint8_t font);
 void ui_editText(UI_Element_Visual* e, char* new_text, uint8_t new_font);
@@ -106,6 +108,7 @@ void ui_editBitmap(UI_Element_Visual* e, uint8_t new_w, uint8_t new_h, uint8_t* 
 
 UI_Element_Visual* ui_findVisualById(UI_Screen* screen, uint8_t id);
 UI_Element_Interactable* ui_findInteractableById(UI_Screen* screen, uint8_t id);
+UI_Element_Interactable* ui_findInteractableByVisual(UI_Screen* screen, UI_Element_Visual* vis);
 
 void ui_hoverNext(UI_Screen* screen, uint8_t direction);
 void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected);

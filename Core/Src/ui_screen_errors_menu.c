@@ -61,8 +61,7 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 	screen->cursor_left_or_right = 1;
 	
   // Default hover index
-  if (screen->visuals_count > 0)
-    screen->hovered = &screen->visuals[1];
+	ui_hoverNext(screen, 1);
 	
 	screen->callback_interval = 100;
 	screen->general_callback = ErrorsMenu_ScreenCallback;

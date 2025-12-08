@@ -75,21 +75,37 @@ UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type
     return e;
 }
 
-UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback callback)
+UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visual *v, UI_Callback main_callback, UI_Callback selection_callback, UI_Callback onselect_callback)
 {
-    if (screen->interactables_count >= UI_MAX_ELEMENT_COUNT)
-        return NULL;
+	UI_Element_Interactable* inter = NULL;
+	for (uint8_t i = 0; i < screen->interactables_count; i++)
+	{
+		if (screen->interactables[i].visual == v)
+		{
+			inter = &(screen->interactables[i]);
+			break;
+		}
+	}
+	
+	if (inter == NULL)
+	{
+		if (screen->interactables_count >= UI_MAX_ELEMENT_COUNT)
+      return NULL;
 		
-		UI_Element_Interactable* i = &(screen->interactables[screen->interactables_count++]);
-		memset(i, 0, sizeof(UI_Element_Interactable));
-		
-		i->id = 0;
-		
-    i->visual = v;
-		i->callback = callback;
-		i->context = screen;
-		
-		return i;
+		inter = &(screen->interactables[screen->interactables_count++]);
+	}
+
+	memset(inter, 0, sizeof(UI_Element_Interactable));\
+	
+	inter->id = 0;
+	
+  inter->visual = v;
+	inter->main_callback = main_callback;
+	inter->selection_callback = selection_callback;
+	inter->onselect_callback = onselect_callback;
+	inter->context = screen;
+	
+	return inter;
 }
 
 UI_Element_Visual* ui_addText(UI_Screen* screen, uint8_t x, uint8_t y, uint8_t color, uint8_t tab_index, int8_t cursor_offset, char* text, uint8_t font)
@@ -154,6 +170,18 @@ UI_Element_Interactable* ui_findInteractableById(UI_Screen* screen, uint8_t id)
 	for (uint8_t i = 0; i < screen->interactables_count; i++)
 	{
 		if (screen->interactables[i].id == id)
+		{
+			return &(screen->interactables[i]);
+		}
+	}
+	return NULL;
+}
+
+UI_Element_Interactable* ui_findInteractableByVisual(UI_Screen* screen, UI_Element_Visual* vis)
+{
+	for (uint8_t i = 0; i < screen->interactables_count; i++)
+	{
+		if (screen->interactables[i].visual == vis)
 		{
 			return &(screen->interactables[i]);
 		}
@@ -259,6 +287,8 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 
 void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected)
 {
+	uint8_t old_selected = screen->item_is_selected;
+	
 	if (toggle)
 	{
 			screen->item_is_selected = !screen->item_is_selected;
@@ -266,6 +296,15 @@ void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected)
 	else
 	{
 			screen->item_is_selected = is_selected;
+	}
+	
+	if (old_selected != screen->item_is_selected && screen->hovered != NULL)
+	{
+		UI_Element_Interactable* i = ui_findInteractableByVisual(screen, screen->hovered);
+		if (i != NULL && i->main_callback != NULL)
+		{
+			i->onselect_callback(screen, PRESS_TYPE_OK, i);
+		}
 	}
 }
 
@@ -277,13 +316,10 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
 			if (screen->hovered != NULL && screen->item_is_selected)
 			{
-				for (uint8_t i = 0; i < screen->interactables_count; i++)
+				UI_Element_Interactable* i = ui_findInteractableByVisual(screen, screen->hovered);
+				if (i != NULL && i->main_callback != NULL)
 				{
-					UI_Element_Interactable* inter = &(screen->interactables[i]);
-					if (inter->visual == screen->hovered)
-					{
-						inter->callback(screen, interaction_type, inter);
-					}
+					i->main_callback(screen, interaction_type, i);
 				}
 			}
 			else
@@ -294,12 +330,16 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 		case PRESS_TYPE_OK:
 			if (screen->hovered != NULL)
 			{
-				for (uint8_t i = 0; i < screen->interactables_count; i++)
+				UI_Element_Interactable* i = ui_findInteractableByVisual(screen, screen->hovered);
+				if (i != NULL)
 				{
-					UI_Element_Interactable* inter = &(screen->interactables[i]);
-					if (inter->visual == screen->hovered)
+					if (i->selection_callback != NULL)
 					{
-						inter->callback(screen, interaction_type, inter);
+						i->selection_callback(screen, interaction_type, i);
+					}
+					else if (i->main_callback != NULL)
+					{
+						i->main_callback(screen, interaction_type, i);
 					}
 				}
 			}

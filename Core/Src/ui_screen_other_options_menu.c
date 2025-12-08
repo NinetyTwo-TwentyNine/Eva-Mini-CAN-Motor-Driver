@@ -12,15 +12,11 @@ static void OptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type p
 	
 	switch(press_type)
 	{
-		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
-			break;
 		case PRESS_TYPE_OK:
 			switch (element->visual->id)
 			{
 				case back_id: UI_BuildStartMenu(screen); break;
 			}
-			break;
-		case PRESS_TYPE_OTHER:
 			break;
 		default: return;
 	}
@@ -55,19 +51,15 @@ void UI_BuildOptionsMenu(UI_Screen* screen)
 		UI_Element_Interactable* inter = ui_bindInteractable(
 			screen,
       vis,
-      OptionsMenu_OnItemPressed
+      OptionsMenu_OnItemPressed, NULL, NULL
     );
-
-    // Optional: assign interactable ID
-    //inter->id = 0;
   }
 
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	
   // Default hover index
-  if (screen->visuals_count > 0)
-    screen->hovered = &screen->visuals[0];
+	ui_hoverNext(screen, 1);
 	
 	main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
