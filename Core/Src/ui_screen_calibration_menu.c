@@ -33,8 +33,8 @@ static uint8_t label_tab_ids[CM_ELEMENT_TEXT_COUNT] = { 1, 2, 3, 4, 5, 6, 7, 8, 
 #define CM_POS_COUNTED_MIN_SPEED_VAL 7
 #define CM_POS_COUNTED_MAX_SPEED_VAL 8
 
-static uint16_t width_val, quota_val, time_min_val, time_sec_val, spins_val, mass_val, counted_mass_val, counted_min_speed_val, counted_max_speed_val;
-static uint16_t* val_ptrs[CM_ELEMENT_VAL_COUNT] = { &width_val, &quota_val, &time_min_val, &time_sec_val, &spins_val, &mass_val, &counted_mass_val, &counted_min_speed_val, &counted_max_speed_val };
+static uint32_t width_val, quota_val, time_min_val, time_sec_val, spins_val, mass_val, counted_mass_val, counted_min_speed_val, counted_max_speed_val;
+static uint32_t* val_ptrs[CM_ELEMENT_VAL_COUNT] = { &width_val, &quota_val, &time_min_val, &time_sec_val, &spins_val, &mass_val, &counted_mass_val, &counted_min_speed_val, &counted_max_speed_val };
 static char* val_types[CM_ELEMENT_VAL_COUNT] = { "м", "кг/га", "мин", "с", "об", "кг", "кг/об", "км/ч", "км/ч" };
 static uint8_t val_xpos[CM_ELEMENT_VAL_COUNT] = { 46, 40, 40, 70, 64, 40, 40, 28, 28 };
 static uint8_t val_ypos[CM_ELEMENT_VAL_COUNT] = { 4, 20, 52, 52, 68, 100, 132, 148, 164 };
@@ -47,14 +47,24 @@ static uint8_t selected_slot, seconds_selected, selected_slot_gone;
 static const uint8_t seconds_selected_default = true;
 
 static uint32_t initial_time_total, total_motor_movement_time;
-static uint64_t time_save_ui = 0;
+static uint64_t time_save_ui_1 = 0, time_save_ui_2 = 0;
 static const uint16_t slot_blink_period = 400;
 
+static int16_t CMHelper_GetValPosFromItemId(uint8_t item_id);
+static void CMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos);
+static void CMHelper_UpdateValStr_SlotBlink(UI_Screen* screen, uint8_t slot_gone);
+static UI_Element_Visual* CMHelper_SetElementFunctionality(UI_Screen* screen, uint8_t item_pos, uint8_t tab_index_on, uint8_t functionality_on);
+static void CMHelper_SetElementFunctionality_Array(UI_Screen* screen, uint8_t* elem_array, uint8_t elem_count, uint8_t tab_index_on, uint8_t functionality_on);
+static float CMHelper_CalculateMotorSpeed(void);
 
 static void CalibrationMenu_ScreenCallback(UI_Screen* screen);
 static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element);
 static void CalibrationMenu_OnItemPressed_Selection(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element);
 static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element);
+
+//==================================
+// Helpers
+//==================================
 
 static int16_t CMHelper_GetValPosFromItemId(uint8_t item_id)
 {
@@ -83,13 +93,13 @@ static void CMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (e == NULL || e->type != VISUAL_TYPE_TEXT) return;
 	
 	char final_string[UI_ELEMENT_MAX_CHAR_COUNT] = "";
-	utils_val_to_text_converter(final_string, length, value, type, selected_slot, selected_slot_gone);
+	utils_val_to_text_converter(final_string, length, 3, value, type, selected_slot, selected_slot_gone);
 	ui_editText(e, final_string, e->data.text.font);
 }
 
-static void CMHelper_SlotBlinkUpdate(UI_Screen* screen, uint8_t slot_gone)
+static void CMHelper_UpdateValStr_SlotBlink(UI_Screen* screen, uint8_t slot_gone)
 {
-	time_save_ui = sys_timer;
+	time_save_ui_1 = sys_timer;
 	selected_slot_gone = slot_gone;
 		
 	CMHelper_ConvertValToText(screen, CMHelper_GetValPosFromItemId(screen->hovered->id));
@@ -109,7 +119,7 @@ static UI_Element_Visual* CMHelper_SetElementFunctionality(UI_Screen* screen, ui
 		{
 			main = CalibrationMenu_OnItemPressed_Main;
 			int16_t val_pos = CMHelper_GetValPosFromItemId(label_ids[item_pos]);
-			if ( (val_pos < CM_ELEMENT_VAL_COUNT && val_pos > 0) && val_ptrs[val_pos] != NULL)
+			if ( (val_pos < CM_ELEMENT_VAL_COUNT && val_pos >= 0) && val_ptrs[val_pos] != NULL)
 			{
 				selection = CalibrationMenu_OnItemPressed_Selection;
 				onselect = CalibrationMenu_OnItemPressed_OnSelect;
@@ -128,12 +138,24 @@ static void CMHelper_SetElementFunctionality_Array(UI_Screen* screen, uint8_t* e
 	}
 }
 
+static float CMHelper_CalculateMotorSpeed()
+{
+	if (initial_time_total != 0)
+	{
+		return ( (float)spins_val / ((float)initial_time_total / 60) );
+	}
+	return 0;
+}
+
+//==================================
+// Main functionality
+//==================================
 
 static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 {
-	if (screen->item_is_selected && screen->hovered != NULL && sys_timer - time_save_ui > slot_blink_period)
+	if (screen->item_is_selected && screen->hovered != NULL && sys_timer - time_save_ui_1 > slot_blink_period)
 	{
-		CMHelper_SlotBlinkUpdate(screen, !selected_slot_gone);
+		CMHelper_UpdateValStr_SlotBlink(screen, !selected_slot_gone);
 		ui_update_required = true;
 	}
 	
@@ -183,7 +205,7 @@ static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 		}
 	}
 	
-	if (sys_timer - can_last_send_time > 5000)
+	if (sys_timer - can_last_send_time > 5000 && sys_timer - time_save_ui_2 > 1000)
 	{
 		switch_to_start_menu_allowed = true;
 		
@@ -203,7 +225,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 				int16_t val_pos = CMHelper_GetValPosFromItemId(element_id);
 				if ( (val_pos >= CM_ELEMENT_VAL_COUNT || val_pos < 0) || val_ptrs[val_pos] == NULL) return;
 				
-				uint16_t *val_ptr = val_ptrs[val_pos];
+				uint32_t *val_ptr = val_ptrs[val_pos];
 				uint8_t max_slot_val = 10;
 				if (element_id == time_item_id && selected_slot == 1)
 				{
@@ -211,7 +233,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 				}
 				
 				utils_edit_value_by_slot(val_ptr, selected_slot, press_type, max_slot_val);
-				CMHelper_SlotBlinkUpdate(screen, false);
+				CMHelper_UpdateValStr_SlotBlink(screen, false);
 			}
 			break;
 		case PRESS_TYPE_OK:
@@ -231,6 +253,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					ui_hoverNext(screen, 1);
 					CMHelper_SetElementFunctionality(screen, CM_POS_FILL_MOTOR, 0, 0);
 					
+					time_save_ui_2 = sys_timer;
 					switch_to_start_menu_allowed = false;
 					can_should_send_test_package = true;
 					break;
@@ -253,7 +276,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					}
 					else
 					{
-						current_can_motor_speed = ( (float)spins_val / ((float)initial_time_total / 60) );
+						current_can_motor_speed = CMHelper_CalculateMotorSpeed();
 						
 						uint8_t deselection_array[] = { CM_POS_SPINS_ITEM, CM_POS_TIME_ITEM };
 						CMHelper_SetElementFunctionality_Array(screen, deselection_array, sizeof(deselection_array), 1, 0);
@@ -261,6 +284,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 						uint8_t deselection_array_2[] = { CM_POS_MASS_ITEM, CM_POS_COUNT_PARAMS, CM_POS_BACK };
 						CMHelper_SetElementFunctionality_Array(screen, deselection_array_2, sizeof(deselection_array_2), 0, 1);
 						
+						time_save_ui_2 = sys_timer;
 						switch_to_start_menu_allowed = false;
 						can_procedure_in_progress = true;
 						
@@ -310,12 +334,12 @@ static void CalibrationMenu_OnItemPressed_Selection(UI_Screen* screen, UI_Elemen
 			
 			if (!screen->item_is_selected)
 			{
-				CMHelper_SlotBlinkUpdate(screen, false);
+				CMHelper_UpdateValStr_SlotBlink(screen, false);
 				ui_selectItem(screen, 0, 1); // Force select
 			}
 			else
 			{
-				CMHelper_SlotBlinkUpdate(screen, false);
+				CMHelper_UpdateValStr_SlotBlink(screen, false);
 				
 				selected_slot = (selected_slot + 1) % (val_allowed_lengths[val_pos]);
 				if (selected_slot == 0)
@@ -364,6 +388,10 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 					case width_item_id: case quota_item_id:
 					{
 						// TODO: Handle width and quota being saved to FLASH memory
+						if (width_val != user_seeder_width || quota_val != user_quota)
+						{
+							user_mass_per_turn = 0;
+						}
 						if (element_id == width_item_id)
 						{
 							user_seeder_width = width_val;
@@ -387,12 +415,12 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 					{
 						initial_time_total = time_min_val * 60 + time_sec_val;
 						uint32_t motor_speed_check = 0;
-						if (time_sec_val != 0)
+						if (initial_time_total != 0)
 						{
-							motor_speed_check = round( ( (float)spins_val / ((float)initial_time_total / 60) ) * 10 );
+							motor_speed_check = round( CMHelper_CalculateMotorSpeed() * 10 );
 						}
 						
-						if (time_sec_val != 0 && spins_val != 0 && motor_speed_check > 0 && motor_speed_check < 2560)
+						if (spins_val != 0 && motor_speed_check > 0 && motor_speed_check < 2560)
 						{
 							CMHelper_SetElementFunctionality(screen, CM_POS_BEGIN_CALIBRATION, 1, 1);
 						}

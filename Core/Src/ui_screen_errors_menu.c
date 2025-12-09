@@ -172,6 +172,6 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 	screen->callback_interval = 100;
 	screen->general_callback = ErrorsMenu_ScreenCallback;
 	
-	main_functionality_active = true;
+	//main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
 }

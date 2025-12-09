@@ -3,7 +3,7 @@
 #define SOM_ELEMENT_COUNT 4
 
 static char* labels[SOM_ELEMENT_COUNT] = { "Калибровка", "Проверка", "калибровки", "назад" };
-static const uint8_t calibration_id = 1, calibration_check_id = 0, calibration_check_2_id = 2, back_id = 3;
+static const uint8_t calibration_id = 1, calibration_check_id = 2, calibration_check_2_id = 3, back_id = 4;
 static uint8_t xpos[SOM_ELEMENT_COUNT] = { 8, 8, 8, 8 };
 static uint8_t ypos[SOM_ELEMENT_COUNT] = { 4, 22, 34, 52 };
 static uint8_t tab_ids[SOM_ELEMENT_COUNT] = { 1, 0, 2, 3 };
@@ -19,7 +19,7 @@ static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_
 			switch(element->visual->id)
 			{
 				case calibration_id: UI_BuildCalibrationMenu(screen); break;
-				case calibration_check_id: UI_BuildCalibrationCheckMenu(screen); break;
+				case calibration_check_2_id: UI_BuildCalibrationCheckMenu(screen); break;
 				case back_id: UI_BuildStartMenu(screen); break;
 			}
 			break;
@@ -63,6 +63,6 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
   // Default hover index
 	ui_hoverNext(screen, 1);
 	
-	main_functionality_active = true;
+	//main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
 }
