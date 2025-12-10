@@ -531,16 +531,6 @@
           <GroupName>Application/User/Libraries</GroupName>
           <Files>
             <File>
-              <FileName>can_parser.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\can_parser.h</FilePath>
-            </File>
-            <File>
-              <FileName>frequency_calc_basic.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\frequency_calc_basic.h</FilePath>
-            </File>
-            <File>
               <FileName>GFX_General.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\GFX_General.h</FilePath>
@@ -559,6 +549,21 @@
               <FileName>mcp23008.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\mcp23008.h</FilePath>
+            </File>
+            <File>
+              <FileName>can_parser.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\can_parser.h</FilePath>
+            </File>
+            <File>
+              <FileName>frequency_calc_basic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\frequency_calc_basic.h</FilePath>
+            </File>
+            <File>
+              <FileName>params_calculation.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\params_calculation.h</FilePath>
             </File>
             <File>
               <FileName>ui_screen_system.h</FileName>
@@ -606,16 +611,6 @@
               <FilePath>..\Core\Inc\ui_screen_calibration_check_menu.h</FilePath>
             </File>
             <File>
-              <FileName>can_parser.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\can_parser.c</FilePath>
-            </File>
-            <File>
-              <FileName>frequency_calc_basic.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\frequency_calc_basic.c</FilePath>
-            </File>
-            <File>
               <FileName>GFX_General.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\GFX_General.c</FilePath>
@@ -634,6 +629,21 @@
               <FileName>mcp23008.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\mcp23008.c</FilePath>
+            </File>
+            <File>
+              <FileName>can_parser.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\can_parser.c</FilePath>
+            </File>
+            <File>
+              <FileName>frequency_calc_basic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\frequency_calc_basic.c</FilePath>
+            </File>
+            <File>
+              <FileName>params_calculation.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\params_calculation.c</FilePath>
             </File>
             <File>
               <FileName>ui_screen_system.c</FileName>

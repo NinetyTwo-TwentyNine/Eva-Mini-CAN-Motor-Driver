@@ -57,6 +57,7 @@ extern "C" {
 #include "GFX_SSD1306.h"
 #include "mcp23008.h"
 #include "can_parser.h"
+#include "params_calculation.h"
 
 #include "ui_screen_system.h"
 #include "ui_screen_start_menu.h"
@@ -213,7 +214,7 @@ extern float current_can_motor_speed;
 #define ERROR_TYPE_QUOTA 4
 #define ERROR_TYPE_EMPTY 5
 
-#define ERROR_DETERMINATION_TIME 600
+#define ERROR_DETERMINATION_TIME 1000
 #define ERROR_NOTIFICATION_BEEP_TIME 200
 #define ERROR_NOTIFICATION_BEEP_COUNT 4
 

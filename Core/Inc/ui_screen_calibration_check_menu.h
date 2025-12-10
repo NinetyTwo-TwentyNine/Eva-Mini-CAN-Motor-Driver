@@ -3,6 +3,7 @@
 
 #include "ui_screen_system.h"
 #include "ui_utilities.h"
+#include "params_calculation.h"
 #include "main.h"
 
 void UI_BuildCalibrationCheckMenu(UI_Screen* screen);

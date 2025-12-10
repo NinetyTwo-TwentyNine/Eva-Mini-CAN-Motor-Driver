@@ -50,11 +50,14 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 		vis->id = ids[i];
 
     // ---------------- Interactable ----------------
-		UI_Element_Interactable* inter = ui_bindInteractable(
-			screen,
-      vis,
-      SeederOptionsMenu_OnItemPressed, NULL, NULL
-    );
+		if (ids[i] != calibration_check_2_id || (user_max_speed != 0 && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0))
+		{
+			UI_Element_Interactable* inter = ui_bindInteractable(
+				screen,
+				vis,
+				SeederOptionsMenu_OnItemPressed, NULL, NULL
+			);
+		}
   }
 
 	screen->should_draw_cursor = true;
