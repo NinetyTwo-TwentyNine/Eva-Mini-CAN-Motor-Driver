@@ -310,8 +310,8 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					counted_max_speed_val = calculateMaxMotorSpeed(quota_val, width_val, counted_mass_val);
 					
 					user_mass_per_turn = counted_mass_val;
-					user_min_speed = counted_min_speed_val;
-					user_max_speed = counted_max_speed_val;
+					user_speed_min = counted_min_speed_val;
+					user_speed_max = counted_max_speed_val;
 					
 					CMHelper_SetElementFunctionality(screen, CM_POS_BEGIN_CALIBRATION, 0, 0);
 					

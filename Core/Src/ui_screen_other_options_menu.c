@@ -17,6 +17,9 @@ static void OptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type p
 		case PRESS_TYPE_OK:
 			switch (element->visual->id)
 			{
+				case fan_sensor_id: UI_BuildFanSensorMenu(screen); break;
+				case speed_sensor_id: UI_BuildSpeedSensorMenu(screen); break;
+				case quota_check_id: UI_BuildProgressMenu(screen); break;
 				case back_id: UI_BuildStartMenu(screen); break;
 			}
 			break;

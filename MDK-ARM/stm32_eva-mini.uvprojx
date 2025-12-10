@@ -611,6 +611,21 @@
               <FilePath>..\Core\Inc\ui_screen_calibration_check_menu.h</FilePath>
             </File>
             <File>
+              <FileName>ui_screen_fan_sensor_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_screen_fan_sensor_menu.h</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_speed_sensor_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_screen_speed_sensor_menu.h</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_progress_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\ui_screen_progress_menu.h</FilePath>
+            </File>
+            <File>
               <FileName>GFX_General.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\GFX_General.c</FilePath>
@@ -689,6 +704,21 @@
               <FileName>ui_screen_calibration_check_menu.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\ui_screen_calibration_check_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_fan_sensor_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_screen_fan_sensor_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_speed_sensor_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_screen_speed_sensor_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_screen_progress_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ui_screen_progress_menu.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -77,8 +77,11 @@ uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 
 uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = false, can_procedure_in_progress = false, main_functionality_active = false;
 
-uint32_t user_min_speed = 0, user_max_speed = 0, user_fan_speed_min = 0, user_fan_speed_max = 0, user_wheel_diameter = 0, user_wheel_pulses = 0, user_seeder_width = 0, user_quota = 0, user_mass_per_turn = 0;
-float current_can_motor_speed = 0;
+// TODO: Extract all of these from FLASH memory
+uint32_t user_speed_min = 0, user_speed_max = 0, user_fan_speed_min = 0, user_fan_speed_max = SENSOR_VALUE_RANGE_FAN, user_wheel_diameter = 0, user_wheel_pulses = 0, user_seeder_width = 0, user_quota = 0, user_mass_per_turn = 0;
+uint32_t current_user_area_total = 0, current_user_area_session = 0;
+
+float current_can_motor_speed = 0, current_seeder_speed = 0;
 
 uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}, {0}};
 uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start[ERROR_COUNT_TOTAL] = {0};
@@ -306,7 +309,7 @@ int main(void)
 				}
 			}
 			
-			if (user_min_speed != 0 && user_max_speed != 0 && user_fan_speed_min != 0 && user_fan_speed_max != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0 && user_seeder_width != 0 && user_quota != 0 && user_mass_per_turn != 0)
+			if (user_speed_min != 0 && user_speed_max != 0 && user_fan_speed_min != 0 && user_fan_speed_max != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0 && user_seeder_width != 0 && user_quota != 0 && user_mass_per_turn != 0)
 			{
 				// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
 			}

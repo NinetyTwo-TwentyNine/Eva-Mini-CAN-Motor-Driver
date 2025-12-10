@@ -68,18 +68,62 @@ void utils_edit_value_by_slot(uint32_t* val_ptr, uint8_t selected_slot, UI_Eleme
 
 void utils_edit_value_by_slot_with_min_max(uint32_t* val_ptr, uint8_t selected_slot, uint8_t allowed_length, UI_Element_Press_Type press_type, uint32_t min_val, uint32_t max_val)
 {
-	uint8_t max_slot_value = 10;
-	if (selected_slot == allowed_length)
+	uint32_t scaler = 1;
+	uint8_t all_senior_are_max = 1, all_senior_are_min = 1;
+	for (uint8_t i = 0; i < allowed_length; i++)
 	{
-		uint32_t scaler = 1;
-		for (uint8_t i = 0; i < selected_slot; i++)
+		if (i > selected_slot)
 		{
-			scaler *= 10;
+			uint8_t slot_value = (*val_ptr / scaler) % 10, max_slot_val = (max_val / scaler) % 10, min_slot_val = (min_val / scaler) % 10;
+			if (slot_value != max_slot_val)
+			{
+				all_senior_are_max = 0;
+			}
+			if (slot_value != min_slot_val)
+			{
+				all_senior_are_min = 0;
+			}
 		}
-		max_slot_value = (max_val / scaler) % 10;
+		scaler *= 10;
 	}
-	utils_edit_value_by_slot(val_ptr, selected_slot, press_type, max_slot_value);
 	
+	scaler = 1;
+	for (uint8_t i = 0; i < selected_slot; i++)
+	{
+		scaler *= 10;
+	}
+	uint8_t curr_slot_val = (*val_ptr / scaler) % 10, max_slot_val = (max_val / scaler) % 10, min_slot_val = (min_val / scaler) % 10;
+	if (!all_senior_are_max)
+	{
+		max_slot_val = 9;
+	}
+	if (!all_senior_are_min)
+	{
+		min_slot_val = 0;
+	}
+	
+	
+	uint8_t possible_slot_vals[10] = {0};
+	uint8_t possible_vals_count = 0, curr_val_pos = 0;
+	for (uint8_t i = min_slot_val; i <= max_slot_val; i++)
+	{
+		if (curr_slot_val == i)
+		{
+			curr_val_pos = possible_vals_count;
+		}
+		possible_slot_vals[possible_vals_count++] = i;
+	}
+	
+	if (possible_vals_count <= 1)
+	{
+		return;
+	}
+	
+	uint8_t old_slot_val = curr_slot_val;
+	curr_val_pos = (press_type == PRESS_TYPE_UP) ? ( (curr_val_pos + 1) % possible_vals_count ) : ( (curr_val_pos == 0) ? (possible_vals_count - 1) : (curr_val_pos - 1) );
+	curr_slot_val = possible_slot_vals[curr_val_pos];
+	
+	*val_ptr = *val_ptr - old_slot_val * scaler + curr_slot_val * scaler;
 	if (*val_ptr > max_val)
 	{
 		*val_ptr = max_val;

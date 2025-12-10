@@ -50,7 +50,7 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 		vis->id = ids[i];
 
     // ---------------- Interactable ----------------
-		if (ids[i] != calibration_check_2_id || (user_max_speed != 0 && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0))
+		if (ids[i] != calibration_check_2_id || (user_speed_max != 0 && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0))
 		{
 			UI_Element_Interactable* inter = ui_bindInteractable(
 				screen,

@@ -267,8 +267,8 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 					uint32_t min_val = 0, max_val = 0xFFFFFFFF;
 					if (val_pos == CCM_POS_SPEED_VAL)
 					{
-						min_val = user_min_speed;
-						max_val = user_max_speed;
+						min_val = user_speed_min;
+						max_val = user_speed_max;
 					}
 					utils_edit_value_by_slot_with_min_max(val_ptr, selected_slot, val_allowed_lengths[val_pos], press_type, min_val, max_val);
 				}
@@ -355,8 +355,8 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 					// TODO: save to FLASH memory
 					user_mass_per_turn = new_mass_val;
 					
-					user_min_speed = calculateMinMotorSpeed(user_quota, user_seeder_width, new_mass_val);
-					user_max_speed = calculateMaxMotorSpeed(user_quota, user_seeder_width, new_mass_val);
+					user_speed_min = calculateMinMotorSpeed(user_quota, user_seeder_width, new_mass_val);
+					user_speed_max = calculateMaxMotorSpeed(user_quota, user_seeder_width, new_mass_val);
 					
 					break;
 				}
@@ -510,7 +510,7 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 		}
 		else if (label_ids[i] == speed_item_id || label_ids[i] == area_item_id || label_ids[i] == mass_per_turn_item_id)
 		{
-			if ( label_ids[i] != mass_per_turn_item_id && (user_max_speed != 0 && user_quota != 0 && user_seeder_width != 0 && user_mass_per_turn != 0) )
+			if ( label_ids[i] != mass_per_turn_item_id && (user_speed_max != 0 && user_quota != 0 && user_seeder_width != 0 && user_mass_per_turn != 0) )
 			{
 				CCMHelper_SetElementFunctionality(screen, i, 1, 1);
 			}
@@ -530,7 +530,7 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 		*val_ptrs[i] = 0;
 	}
 	mass_per_turn_val = user_mass_per_turn;
-	speed_val = user_min_speed;
+	speed_val = user_speed_min;
 	area_divider_val = possible_area_divider_vals[selected_area_divider_pos];
 	
 	if (speed_val != 0 && area_divider_val != 0 && mass_per_turn_val != 0 && user_quota != 0 && user_seeder_width != 0)

@@ -60,13 +60,21 @@ extern "C" {
 #include "params_calculation.h"
 
 #include "ui_screen_system.h"
+
 #include "ui_screen_start_menu.h"
+
 #include "ui_screen_main_menu.h"
 #include "ui_screen_seeder_options_menu.h"
 #include "ui_screen_errors_menu.h"
 #include "ui_screen_other_options_menu.h"
+
 #include "ui_screen_calibration_menu.h"
 #include "ui_screen_calibration_check_menu.h"
+
+#include "ui_screen_fan_sensor_menu.h"
+#include "ui_screen_speed_sensor_menu.h"
+#include "ui_screen_progress_menu.h"
+
 
 /* USER CODE END Includes */
 
@@ -203,8 +211,11 @@ extern uint8_t ui_update_required, main_ui_on;
 
 extern uint8_t switch_to_start_menu_allowed, can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
 
-extern uint32_t user_min_speed, user_max_speed, user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, user_wheel_pulses, user_seeder_width, user_quota, user_mass_per_turn;
-extern float current_can_motor_speed;
+#define SENSOR_VALUE_RANGE_FAN 20
+
+extern uint32_t user_speed_min, user_speed_max, user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, user_wheel_pulses, user_seeder_width, user_quota, user_mass_per_turn;
+extern uint32_t current_user_area_total, current_user_area_session;
+extern float current_can_motor_speed, current_seeder_speed;
 
 #define ERROR_COUNT_TOTAL 6
 #define ERROR_TYPE_FAN 0
