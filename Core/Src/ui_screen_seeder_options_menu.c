@@ -3,11 +3,11 @@
 #define SOM_ELEMENT_COUNT 4
 
 static char* labels[SOM_ELEMENT_COUNT] = { "Калибровка", "Проверка", "калибровки", "назад" };
-static const uint8_t calibration_id = 1, calibration_check_id = 2, calibration_check_2_id = 3, back_id = 4;
+static const uint8_t calibration_id = 1, calibration_check_2_id = 2, calibration_check_id = 3, back_id = 4;
 static uint8_t xpos[SOM_ELEMENT_COUNT] = { 8, 8, 8, 8 };
 static uint8_t ypos[SOM_ELEMENT_COUNT] = { 4, 22, 34, 52 };
 static uint8_t tab_ids[SOM_ELEMENT_COUNT] = { 1, 0, 2, 3 };
-static uint8_t ids[SOM_ELEMENT_COUNT] = { calibration_id, calibration_check_id, calibration_check_2_id, back_id };
+static uint8_t ids[SOM_ELEMENT_COUNT] = { calibration_id, calibration_check_2_id, calibration_check_id, back_id };
 
 static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
 {
@@ -19,7 +19,7 @@ static void SeederOptionsMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_
 			switch(element->visual->id)
 			{
 				case calibration_id: UI_BuildCalibrationMenu(screen); break;
-				case calibration_check_2_id: UI_BuildCalibrationCheckMenu(screen); break;
+				case calibration_check_id: UI_BuildCalibrationCheckMenu(screen); break;
 				case back_id: UI_BuildStartMenu(screen); break;
 			}
 			break;
@@ -32,6 +32,11 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
 
+	uint32_t user_speed_max = getUserParameter(USER_PARAM_SPEED_MAX),
+					 user_mass_per_turn = getUserParameter(USER_PARAM_MASS_PER_TURN),
+					 user_quota = getUserParameter(USER_PARAM_MASS_PER_TURN),
+					 user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH);
+	uint8_t calibration_check_allowed = (user_speed_max != 0 && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0);
   for (uint8_t i = 0; i < SOM_ELEMENT_COUNT; i++)
   {
     // ---------------- Visual ----------------
@@ -50,7 +55,7 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 		vis->id = ids[i];
 
     // ---------------- Interactable ----------------
-		if (ids[i] != calibration_check_2_id || (user_speed_max != 0 && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0))
+		if (!(ids[i] == calibration_check_id && !calibration_check_allowed))
 		{
 			UI_Element_Interactable* inter = ui_bindInteractable(
 				screen,

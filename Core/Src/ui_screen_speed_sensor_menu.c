@@ -10,7 +10,7 @@ static char *labels[SSM_ELEMENT_TEXT_COUNT] = { "Датчик скорости",
 static const uint8_t screen_label_id = 1, diameter_item_id = 2, pulses_item_id = 3, back_id = 4;
 static uint8_t xpos[SSM_ELEMENT_TEXT_COUNT] = { 4, 4, 4, 4 };
 static uint8_t ypos[SSM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52 };
-static uint8_t text_offset_scalers[SSM_ELEMENT_TEXT_COUNT] = { 0, 4, 2, 0 };
+static uint8_t text_offset_scalers[SSM_ELEMENT_TEXT_COUNT] = { 0, 3, 2, 0 };
 static uint8_t label_ids[SSM_ELEMENT_TEXT_COUNT] = { screen_label_id, diameter_item_id, pulses_item_id, back_id };
 static uint8_t label_tab_ids[SSM_ELEMENT_TEXT_COUNT] = { 0, 2, 3, 4 };
 
@@ -23,7 +23,7 @@ static uint32_t* val_ptrs[SSM_ELEMENT_VAL_COUNT] = { &diameter_val, &pulses_val 
 static char* val_types[SSM_ELEMENT_VAL_COUNT] = { "м", "" };
 static uint8_t val_xpos[SSM_ELEMENT_VAL_COUNT] = { 70, 94 };
 static uint8_t val_ypos[SSM_ELEMENT_VAL_COUNT] = { 20, 36 };
-static uint8_t val_allowed_lengths[SSM_ELEMENT_VAL_COUNT] = { 3, 2 };
+static uint8_t val_allowed_lengths[SSM_ELEMENT_VAL_COUNT] = { 2, 2 };
 static uint8_t val_lengths_after_dot[SSM_ELEMENT_VAL_COUNT] = { 1, 0 };
 static const uint8_t diameter_val_id = 21, pulses_val_id = 22;
 static uint8_t val_ids[SSM_ELEMENT_VAL_COUNT] = { diameter_val_id, pulses_val_id };
@@ -60,7 +60,7 @@ static void SSMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (!SSMHelper_CheckValPosValidity(val_pos)) return;
 	
 	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
-	uint16_t value = *val_ptrs[val_pos];
+	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
 	UI_Element_Visual *e = ui_findVisualById(screen, val_id);
@@ -177,13 +177,13 @@ static void SpeedSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 					case diameter_item_id:
 					{
 						// TODO: Handle wheel diameter value being saved to FLASH memory
-						user_wheel_diameter = diameter_val;
+						setUserParameter(USER_PARAM_WHEEL_DIAMETER, diameter_val);
 						break;
 					}
 					case pulses_item_id:
 					{
 						// TODO: Handle sensor pulses value being saved to FLASH memory
-						user_wheel_pulses = pulses_val;
+						setUserParameter(USER_PARAM_WHEEL_PULSES, pulses_val);
 						break;
 					}
 				}
@@ -239,8 +239,8 @@ void UI_BuildSpeedSensorMenu(UI_Screen* screen)
   {
 		*val_ptrs[i] = 0;
 	}
-	diameter_val = user_wheel_diameter;
-	pulses_val = user_wheel_pulses;
+	diameter_val = getUserParameter(USER_PARAM_WHEEL_DIAMETER);
+	pulses_val = getUserParameter(USER_PARAM_WHEEL_PULSES);
 	
   for (uint8_t i = 0; i < SSM_ELEMENT_VAL_COUNT; i++)
   {

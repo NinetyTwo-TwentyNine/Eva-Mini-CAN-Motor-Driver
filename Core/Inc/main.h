@@ -52,11 +52,12 @@ extern "C" {
 
 #include "stm32f1xx_ll_can.h" // Our own LL CAN driver replacement for STM32F103
 
-#include "frequency_calc_basic.h"
+#include "flash_control.h"
 #include "i2c_control.h"
 #include "GFX_SSD1306.h"
 #include "mcp23008.h"
 #include "can_parser.h"
+#include "frequency_calc_basic.h"
 #include "params_calculation.h"
 
 #include "ui_screen_system.h"
@@ -117,7 +118,6 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 // General utilities
-
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define swap(a, b) { int16_t t = a; a = b; b = t; }
@@ -147,9 +147,13 @@ extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
 #define SENSADDR_POS_SEEDER 3
 #define SENSADDR_POS_BUNKER 4
 
-extern SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX];
-extern float sensor_frequency[SENSOR_COUNT_MAX];
+#define SENSADDR_MASK_TIMS ((1 << SENSADDR_POS_FAN) + (1 << SENSADDR_POS_MOTOR) + (1 << SENSADDR_POS_SPEED))
+#define SENSADDR_MASK_GPIOS ((1 << SENSADDR_POS_SEEDER) + (1 << SENSADDR_POS_BUNKER))
+
+extern SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX];
+extern SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX];
 extern uint64_t sensor_last_check_time[SENSOR_COUNT_MAX];
+extern float sensor_frequency[SENSOR_COUNT_MAX];
 
 // SSD1306
 #define SCREEN_SPI SPI1
@@ -194,11 +198,9 @@ extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_out
 
 // CAN
 #define CAN_TRANSMISSION_INTERVAL 100
-#define CAN_MOTOR_ID 0x16000001
-#define CAN_MOTOR_DEFAULT_SPEED_EMPTY 30 // Just enough for one transmission to make a spin
 
 extern uint8_t can_last_send_success;
-extern uint64_t can_last_send_time;
+extern uint64_t can_last_send_time, can_test_initialization_time;
 
 // UI/Logic
 #define UI_UPDATE_MAX_FREQUENCY 50
@@ -207,15 +209,37 @@ extern uint64_t can_last_send_time;
 
 extern UI_Screen main_screen;
 extern uint64_t ui_last_update_time, ui_last_callback_time;
-extern uint8_t ui_update_required, main_ui_on;
+extern uint8_t ui_update_required, main_ui_on, switch_to_start_menu_allowed;
 
-extern uint8_t switch_to_start_menu_allowed, can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
+
+#define MOTOR_CAN_ID 0x16000001
+#define MOTOR_DEFAULT_SPEED_EMPTY 30 // Just enough for one transmission to make a spin
 
 #define SENSOR_VALUE_RANGE_FAN 20
 
-extern uint32_t user_speed_min, user_speed_max, user_fan_speed_min, user_fan_speed_max, user_wheel_diameter, user_wheel_pulses, user_seeder_width, user_quota, user_mass_per_turn;
+extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
+
+
+#define USER_PARAMS_COUNT 9
+#define USER_PARAM_SPEED_MIN 0
+#define USER_PARAM_SPEED_MAX 1
+#define USER_PARAM_FAN_SPEED_MIN 2
+#define USER_PARAM_FAN_SPEED_MAX 3
+#define USER_PARAM_WHEEL_DIAMETER 4
+#define USER_PARAM_WHEEL_PULSES 5
+#define USER_PARAM_SEEDER_WIDTH 6
+#define USER_PARAM_QUOTA 7
+#define USER_PARAM_MASS_PER_TURN 8
+
 extern uint32_t current_user_area_total, current_user_area_session;
-extern float current_can_motor_speed, current_seeder_speed;
+
+void setUserParameter(uint8_t pos, uint32_t parameter);
+uint32_t getUserParameter(uint8_t pos);
+uint8_t checkIfAllUserParamsAreSet(void);
+
+extern uint8_t current_state_seeder_up;
+extern float current_can_motor_speed, current_actual_motor_speed, current_fan_speed, current_seeder_speed, current_quota;
+
 
 #define ERROR_COUNT_TOTAL 6
 #define ERROR_TYPE_FAN 0
@@ -226,6 +250,8 @@ extern float current_can_motor_speed, current_seeder_speed;
 #define ERROR_TYPE_EMPTY 5
 
 #define ERROR_DETERMINATION_TIME 1000
+#define ERROR_RESET_ALLOW_TIME 500
+#define ERROR_NOTIFICATION_INTERVAL_TIME 400
 #define ERROR_NOTIFICATION_BEEP_TIME 200
 #define ERROR_NOTIFICATION_BEEP_COUNT 4
 
@@ -236,22 +262,32 @@ extern float current_can_motor_speed, current_seeder_speed;
 #define ERROR_NOTIFICATION_IN_PROGRESS 3
 #define ERROR_NOTIFICATION_BEEP_COUNTER 4
 
-extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
-extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start[ERROR_COUNT_TOTAL];
-
 #define BUZZER_PORT GPIOA
 #define BUZZER_PIN LL_GPIO_PIN_9
+
+extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
+extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start_end[ERROR_COUNT_TOTAL];
 
 // Resources
 #define LOGO_ERROR_ALERT_SIZE 20
 #define LOGO_ERROR_ALERT_HEIGHT 10
 #define LOGO_ERROR_ALERT_WIDTH 9
 
+#define LOGO_QUESTION_MARK_SIZE 20
+#define LOGO_QUESTION_MARK_HEIGHT 10
+#define LOGO_QUESTION_MARK_WIDTH 9
+
+#define LOGO_OK_MARK_SIZE 20
+#define LOGO_OK_MARK_HEIGHT 10
+#define LOGO_OK_MARK_WIDTH 9
+
 #define LOGO_SEEDER_STATE_SIZE 9
 #define LOGO_SEEDER_STATE_HEIGHT 9
 #define LOGO_SEEDER_STATE_WIDTH 8
 
 extern uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE];
+extern uint8_t logo_question_mark[LOGO_QUESTION_MARK_SIZE];
+extern uint8_t logo_ok_mark[LOGO_OK_MARK_SIZE];
 extern uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE];
 
 /* USER CODE END Private defines */

@@ -12,6 +12,11 @@ static char *error_labels[EM_ELEMENT_COUNT] = { "Бункер пуст: напо
 static uint8_t xpos[EM_ELEMENT_COUNT] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 static uint8_t ypos[EM_ELEMENT_COUNT] = { 6, 18, 38, 50, 70, 82, 102, 114, 134, 146, 166, 178 };
 
+
+//==================================
+// Helpers
+//==================================
+
 static int16_t EMHelper_GetErrorPosFromType(uint8_t error_type)
 {
 	int16_t error_pos = -1;
@@ -40,6 +45,9 @@ static int16_t EMHelper_GetErrorPosFromType(uint8_t error_type)
 	}
 }
 
+//==================================
+// Main functionality
+//==================================
 
 static void ErrorsMenu_ScreenCallback(UI_Screen* screen)
 {
@@ -124,6 +132,9 @@ static void ErrorsMenu_ScreenCallback(UI_Screen* screen)
 	ui_update_required = true;
 }
 
+//==================================
+// Initial setup
+//==================================
 
 void UI_BuildErrorsMenu(UI_Screen* screen)
 {

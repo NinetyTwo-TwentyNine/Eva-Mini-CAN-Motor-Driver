@@ -531,6 +531,16 @@
           <GroupName>Application/User/Libraries</GroupName>
           <Files>
             <File>
+              <FileName>flash_control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\flash_control.h</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\i2c_control.h</FilePath>
+            </File>
+            <File>
               <FileName>GFX_General.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\GFX_General.h</FilePath>
@@ -539,11 +549,6 @@
               <FileName>GFX_SSD1306.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\GFX_SSD1306.h</FilePath>
-            </File>
-            <File>
-              <FileName>i2c_control.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\i2c_control.h</FilePath>
             </File>
             <File>
               <FileName>mcp23008.h</FileName>
@@ -626,6 +631,16 @@
               <FilePath>..\Core\Inc\ui_screen_progress_menu.h</FilePath>
             </File>
             <File>
+              <FileName>flash_control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\flash_control.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\i2c_control.c</FilePath>
+            </File>
+            <File>
               <FileName>GFX_General.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\GFX_General.c</FilePath>
@@ -634,11 +649,6 @@
               <FileName>GFX_SSD1306.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\GFX_SSD1306.c</FilePath>
-            </File>
-            <File>
-              <FileName>i2c_control.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\i2c_control.c</FilePath>
             </File>
             <File>
               <FileName>mcp23008.c</FileName>

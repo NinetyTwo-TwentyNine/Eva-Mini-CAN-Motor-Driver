@@ -1,38 +1,172 @@
 #include <ui_screen_main_menu.h>
 
-static const uint8_t element_text_count = 4;
-static char *texts[element_text_count] = { "Норма:", "В:", "М:", "S:" };
-static uint8_t text_xpos[element_text_count] = { 4, 4, 4, 80 };
-static uint8_t text_ypos[element_text_count] = { 20, 36, 52, 52 };
+#define MM_ELEMENT_TEXT_COUNT 6
+#define MM_POS_ERROR_ITEM 0
+#define MM_POS_QUOTA_ITEM 1
+#define MM_POS_FAN_ITEM 2
+#define MM_POS_MOTOR_ITEM 3
+#define MM_POS_AREA_ITEM 4
+#define MM_POS_SEEDER_ITEM 5
 
-static const uint8_t element_val_count = 6;
-static const uint8_t norm_val_id = 1, fan_val_id = 2, motor_val_id = 3, area_val_id = 4, error_val_id = 5, seeder_val_id = 6;
-static char *val_defaults[element_val_count] = { "000(000)", "0000", "000", "000", "Бункер пуст", "Т" };
-static uint8_t val_xpos[element_val_count] = { 42, 16, 16, 92, 16, 115 };
-static uint8_t val_ypos[element_val_count] = { 20, 36, 52, 52, 4, 36 };
-
-static const uint8_t element_type_count = 4;
-static char *types[] = { "кг/га", "об/мин", "об/мин", "га" };
-
-static uint8_t val_ids[element_val_count] = { norm_val_id, fan_val_id, motor_val_id, area_val_id, error_val_id, seeder_val_id };
+static const uint8_t error_item_id = 1, norm_item_id = 2, fan_item_id = 3, motor_item_id = 4, area_item_id = 5, seeder_item_id = 6;
+static char *texts[MM_ELEMENT_TEXT_COUNT] = { "", "Норма:", "В:", "М:", "S:", "Т" };
+static uint8_t text_xpos[MM_ELEMENT_TEXT_COUNT] = { 16, 4, 4, 4, 80, 115 };
+static uint8_t text_ypos[MM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52, 52, 36 };
+static uint8_t label_ids[MM_ELEMENT_TEXT_COUNT] = { error_item_id, norm_item_id, fan_item_id, motor_item_id, area_item_id, seeder_item_id };
 
 
-static const uint8_t element_icon_count = 2;
-static const uint8_t error_icon_id = 7, seeder_icon_id = 8;
-static uint8_t* bitmaps[element_icon_count] = {logo_error_alert, logo_seeder_state};
-static uint8_t icon_width[element_icon_count] = {LOGO_ERROR_ALERT_WIDTH, LOGO_SEEDER_STATE_WIDTH};
-static uint8_t icon_height[element_icon_count] = {LOGO_ERROR_ALERT_HEIGHT, LOGO_SEEDER_STATE_HEIGHT};
-static uint8_t icon_xpos[element_icon_count] = { 4, 105 };
-static uint8_t icon_ypos[element_icon_count] = { 4, 36 };
+#define MM_ELEMENT_VAL_COUNT 4
+#define MM_POS_QUOTA_VAL 0
+#define MM_POS_FAN_VAL 1
+#define MM_POS_MOTOR_VAL 2
+#define MM_POS_AREA_VAL 3
 
-static uint8_t icon_ids[element_icon_count] = { error_icon_id, seeder_icon_id };
+static uint32_t quota_val, fan_speed_val, motor_speed_val;
+static uint32_t* val_ptrs[MM_ELEMENT_VAL_COUNT] = { &quota_val, &fan_speed_val, &motor_speed_val, &current_user_area_session };
+static char *val_types[] = { "кг/га", "об/мин", "об/мин", "га" };
+static uint8_t val_allowed_lengths[MM_ELEMENT_VAL_COUNT] = { 3, 4, 3, 1 };
+static uint8_t val_xpos[MM_ELEMENT_VAL_COUNT] = { 42, 16, 16, 92 };
+static uint8_t val_ypos[MM_ELEMENT_VAL_COUNT] = { 20, 36, 52, 52 };
+static const uint8_t norm_val_id = 21, fan_val_id = 22, motor_val_id = 23, area_val_id = 24;
+static uint8_t val_ids[MM_ELEMENT_VAL_COUNT] = { norm_val_id, fan_val_id, motor_val_id, area_val_id };
 
+
+#define MM_ELEMENT_ICON_COUNT 2
+#define MM_POS_ERROR_ICON 0
+#define MM_POS_SEEDER_ICON 1
+
+static uint8_t* bitmaps[MM_ELEMENT_ICON_COUNT] = {logo_ok_mark, logo_seeder_state};
+static uint8_t icon_width[MM_ELEMENT_ICON_COUNT] = {LOGO_OK_MARK_WIDTH, LOGO_SEEDER_STATE_WIDTH};
+static uint8_t icon_height[MM_ELEMENT_ICON_COUNT] = {LOGO_OK_MARK_HEIGHT, LOGO_SEEDER_STATE_HEIGHT};
+static uint8_t icon_xpos[MM_ELEMENT_ICON_COUNT] = { 4, 105 };
+static uint8_t icon_ypos[MM_ELEMENT_ICON_COUNT] = { 4, 36 };
+static const uint8_t error_icon_id = 31, seeder_icon_id = 32;
+static uint8_t icon_ids[MM_ELEMENT_ICON_COUNT] = { error_icon_id, seeder_icon_id };
+
+//==================================
+// Helpers
+//==================================
+
+static uint8_t MMHelper_CheckValPosValidity(int16_t val_pos)
+{
+	if ( (val_pos >= MM_ELEMENT_VAL_COUNT || val_pos < 0) || val_ptrs[val_pos] == NULL) return 0;
+	
+	return 1;
+}
+
+static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
+{
+	if (!MMHelper_CheckValPosValidity(val_pos)) return;
+	
+	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
+	uint32_t value = *val_ptrs[val_pos];
+	char* type = val_types[val_pos];
+	
+	UI_Element_Visual *e = ui_findVisualById(screen, val_id);
+	if (e == NULL || e->type != VISUAL_TYPE_TEXT) return;
+	
+	char final_string[UI_ELEMENT_MAX_CHAR_COUNT] = "";
+	if (val_pos == MM_POS_QUOTA_VAL)
+	{
+		char actual_val_string[UI_ELEMENT_MAX_CHAR_COUNT / 2] = "";
+		char theoretical_val_string[UI_ELEMENT_MAX_CHAR_COUNT / 2] = "";
+		utils_val_to_text_converter(actual_val_string, length, 0, value, "", 0, false);
+		utils_val_to_text_converter(theoretical_val_string, length, 0, getUserParameter(USER_PARAM_QUOTA), "", 0, false);
+		
+		strcat(final_string, actual_val_string);
+		strcat(final_string, "("); strcat(final_string, theoretical_val_string); strcat(final_string, ")");
+		strcat(final_string, type);
+	}
+	else
+	{
+		utils_val_to_text_converter(final_string, length, 0, value, type, 0, false);
+	}
+	ui_editText(e, final_string, e->data.text.font);
+}
+
+//==================================
+// Main functionality
+//==================================
+
+static void MainMenu_ScreenCallback(UI_Screen* screen)
+{
+	quota_val = round(current_quota);
+	fan_speed_val = round(current_fan_speed);
+	motor_speed_val = round(current_actual_motor_speed);
+	
+	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
+	{
+		MMHelper_ConvertValToText(screen, i);
+	}
+	
+	uint8_t errors_present = 0, chosen_error = 0;
+	uint64_t time_comparison = 0;
+	for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
+	{
+		if (!error_state_array[ERROR_STATE_ACTIVE][i]) continue;
+		
+		errors_present = 1;
+		if (error_last_activated[i] > time_comparison)
+		{
+			chosen_error = i;
+		}
+	}
+	
+	UI_Element_Visual *bitmap = ui_findVisualById(screen, error_icon_id), *text = ui_findVisualById(screen, error_item_id);
+	if (bitmap != NULL && text != NULL)
+	{
+		if (errors_present)
+		{
+			ui_editBitmap(bitmap, LOGO_ERROR_ALERT_WIDTH, LOGO_ERROR_ALERT_HEIGHT, logo_error_alert);
+			switch(chosen_error)
+			{
+				case ERROR_TYPE_FAN: ui_editText(text, "Ошибка вент-ра", 0); break;
+				case ERROR_TYPE_MOTOR: ui_editText(text, "Подключ. мотора", 0); break;
+				case ERROR_TYPE_CAN: ui_editText(text, "CAN мотора", 0); break;
+				case ERROR_TYPE_SPEED: ui_editText(text, "Скорость движения", 0); break;
+				case ERROR_TYPE_QUOTA: ui_editText(text, "Норма высева", 0); break;
+				case ERROR_TYPE_EMPTY: ui_editText(text, "Бункер пуст", 0); break;
+				default: ui_editText(text, "Есть ошибки", 0);
+			}
+		}
+		else if (!checkIfAllUserParamsAreSet())
+		{
+			ui_editBitmap(bitmap, LOGO_QUESTION_MARK_WIDTH, LOGO_QUESTION_MARK_HEIGHT, logo_question_mark);
+			ui_editText(text, "Настройки", 0);
+		}
+		else
+		{
+			ui_editBitmap(bitmap, LOGO_OK_MARK_WIDTH, LOGO_OK_MARK_HEIGHT, logo_ok_mark);
+			ui_editText(text, "ОК", 0);
+		}
+	}
+	
+	bitmap = ui_findVisualById(screen, seeder_icon_id);
+	text = ui_findVisualById(screen, seeder_item_id);
+	if (bitmap != NULL && text != NULL)
+	{
+		if (current_state_seeder_up)
+		{
+			ui_editText(text, "Т", 0);
+		}
+		else
+		{
+			ui_editText(text, "Р", 0);
+		}
+	}
+	
+	ui_update_required = true;
+}
+
+//==================================
+// Initial setup
+//==================================
 
 void UI_BuildMainMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
 
-  for (uint8_t i = 0; i < element_text_count; i++)
+  for (uint8_t i = 0; i < MM_ELEMENT_TEXT_COUNT; i++)
   {
     // ---------------- Visual (Text) ----------------
     UI_Element_Visual* text_elem = ui_addText(
@@ -47,19 +181,16 @@ void UI_BuildMainMenu(UI_Screen* screen)
     );
 
     // Optional: assign visual ID
-    text_elem->id = 0;
+    text_elem->id = label_ids[i];
 	}
 	
-	for (uint8_t i = 0; i < element_val_count; i++)
+	quota_val = current_quota;
+	fan_speed_val = current_fan_speed;
+	motor_speed_val = current_actual_motor_speed;
+	
+	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
 	{
     // ---------------- Visual (Value) ----------------
-		char final_string[32];
-		strcpy(final_string, val_defaults[i]);
-		if (i < element_type_count)
-		{
-			strcat(final_string, types[i]);
-		}
-		
     UI_Element_Visual* val_elem = ui_addText(
         screen,
         val_xpos[i],            // pos_x
@@ -67,16 +198,18 @@ void UI_BuildMainMenu(UI_Screen* screen)
 				WHITE,							// color
 			  0,              // tab index
 				CHAR_BASE_WIDTH*3,  // cursor offset
-			  final_string,          		// text
+			  "",          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
 
     // Optional: assign visual ID
     val_elem->id = val_ids[i];
+		
+		MMHelper_ConvertValToText(screen, i);
   }
 	
 	
-	for (uint8_t i = 0; i < element_icon_count; i++)
+	for (uint8_t i = 0; i < MM_ELEMENT_ICON_COUNT; i++)
 	{
 		UI_Element_Visual* icon_elem = ui_addBitmap(
       screen,
@@ -93,6 +226,11 @@ void UI_BuildMainMenu(UI_Screen* screen)
 	screen->should_draw_cursor = false;
   // Default hover index: None
 	
+	screen->general_callback = MainMenu_ScreenCallback;
+	screen->callback_interval = 100;
+	
 	main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
+	
+	screen->general_callback(screen);
 }

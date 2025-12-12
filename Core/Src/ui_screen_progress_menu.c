@@ -18,8 +18,7 @@ static uint8_t label_tab_ids[PM_ELEMENT_TEXT_COUNT] = { 0, 2, 3, 4 };
 #define PM_POS_AREA_TOTAL_VAL 0
 #define PM_POS_AREA_SESSION_VAL 1
 
-static uint32_t total_area_val, session_area_val;
-static uint32_t* val_ptrs[PM_ELEMENT_VAL_COUNT] = { &total_area_val, &session_area_val };
+static uint32_t* val_ptrs[PM_ELEMENT_VAL_COUNT] = { &current_user_area_total, &current_user_area_session };
 static char* val_types[PM_ELEMENT_VAL_COUNT] = { "га", "га" };
 static uint8_t val_xpos[PM_ELEMENT_VAL_COUNT] = { 8, 62 };
 static uint8_t val_ypos[PM_ELEMENT_VAL_COUNT] = { 20, 36 };
@@ -43,7 +42,7 @@ static void PMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (!PMHelper_CheckValPosValidity(val_pos)) return;
 	
 	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
-	uint16_t value = *val_ptrs[val_pos];
+	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
 	UI_Element_Visual *e = ui_findVisualById(screen, val_id);
@@ -62,9 +61,6 @@ static void PMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void ProgressMenu_ScreenCallback(UI_Screen* screen)
 {
-	total_area_val = current_user_area_total;
-	session_area_val = current_user_area_session;
-	
 	PMHelper_ConvertValToText(screen, PM_POS_AREA_TOTAL_VAL);
 	PMHelper_ConvertValToText(screen, PM_POS_AREA_SESSION_VAL);
 	
@@ -83,11 +79,8 @@ static void ProgressMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press_
 			{
 				case session_area_id:
 				{
-					session_area_val = 0;
-					current_user_area_total -= current_user_area_session;
 					current_user_area_session = 0;
 					
-					PMHelper_ConvertValToText(screen, PM_POS_AREA_TOTAL_VAL);
 					PMHelper_ConvertValToText(screen, PM_POS_AREA_SESSION_VAL);
 	
 					ui_update_required = true;
@@ -133,9 +126,6 @@ void UI_BuildProgressMenu(UI_Screen* screen)
 			ProgressMenu_OnItemPressed_Main, NULL, NULL
 		);
   }
-	
-	total_area_val = current_user_area_total;
-	session_area_val = current_user_area_session;
 	
   for (uint8_t i = 0; i < PM_ELEMENT_VAL_COUNT; i++)
   {

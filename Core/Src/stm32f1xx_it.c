@@ -236,7 +236,7 @@ void TIM2_IRQHandler(void)
     LL_TIM_ClearFlag_UPDATE(TIM2);
 	  for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
 		{
-			if (sensor_address[i]->timer == TIM2)
+			if (sensor_address_timer[i]->timer == TIM2)
 			{
 				IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][i]++;
 			}
@@ -273,7 +273,7 @@ void TIM3_IRQHandler(void)
     LL_TIM_ClearFlag_UPDATE(TIM3);
 	  for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
 		{
-			if (sensor_address[i]->timer == TIM3)
+			if (sensor_address_timer[i]->timer == TIM3)
 			{
 				IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][i]++;
 			}
@@ -334,16 +334,21 @@ void TIM4_IRQHandler(void)
 				}
 			}
 			
-			if (error_state_array[ERROR_STATE_PREACTIVE][i] && error_state_array[ERROR_STATE_ACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME / 2)
+			if (error_state_array[ERROR_STATE_PREACTIVE][i] && error_state_array[ERROR_STATE_ACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_RESET_ALLOW_TIME)
 			{
 				error_state_array[ERROR_STATE_PREACTIVE][i] = false; // Error source should constantly update preactive error state in order for the error to not go away after some time
 			}
 		}
 		
 		uint8_t should_start_notification = false, should_continue_notification = false, chosen_index;
-		uint64_t time_comparison = 0;
+		uint64_t time_comparison = 0, notification_comparison = 0;
 		for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
 		{
+			if (error_notification_start_end[i] > notification_comparison)
+			{
+				notification_comparison = error_notification_start_end[i];
+			}
+			
 			if (error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i])
 			{
 				chosen_index = i;
@@ -364,18 +369,27 @@ void TIM4_IRQHandler(void)
 		
 		if (should_start_notification)
 		{
-			error_notification_start[chosen_index] = time_now;
+			if (time_now - time_comparison < ERROR_NOTIFICATION_INTERVAL_TIME)
+			{
+				should_start_notification = false;
+			}
+		}
+		
+		if (should_start_notification)
+		{
+			error_notification_start_end[chosen_index] = time_now;
 			error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = true;
 			error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] = 0;
 			LL_GPIO_SetOutputPin(buzzer_port, buzzer_pin_mask);
 		}
 		else if (should_continue_notification)
 		{
-			uint32_t time_diff = time_now - error_notification_start[chosen_index];
+			uint32_t time_diff = time_now - error_notification_start_end[chosen_index];
 			if (error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] >= (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
 			{
 				error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
 				error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
+				error_notification_start_end[chosen_index] = time_now;
 				LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
 			}
 			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * (error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] + 1))
@@ -424,7 +438,7 @@ void TIM1_UP_IRQHandler(void) {
       LL_TIM_ClearFlag_UPDATE(TIM1);
 			for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
 			{
-				if (sensor_address[i]->timer == TIM1)
+				if (sensor_address_timer[i]->timer == TIM1)
 				{
 					IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][i]++;
 				}

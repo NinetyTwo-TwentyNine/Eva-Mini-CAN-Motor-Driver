@@ -53,13 +53,21 @@ volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initi
 
 float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 uint64_t sensor_last_check_time[SENSOR_COUNT_MAX] = {0};
-SENSADDR_TypeDef* sensor_address[SENSOR_COUNT_MAX] = {
-&(SENSADDR_TypeDef){TIM1, 3},
-&(SENSADDR_TypeDef){TIM1, 4},
-&(SENSADDR_TypeDef){TIM2, 1},
-&(SENSADDR_TypeDef){TIM2, 2},
-&(SENSADDR_TypeDef){TIM2, 3},
-&(SENSADDR_TypeDef){TIM2, 4},
+
+SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX] = {
+	&(SENSADDR_TIM_TypeDef){TIM2, 1},
+	&(SENSADDR_TIM_TypeDef){TIM2, 2},
+	&(SENSADDR_TIM_TypeDef){TIM2, 3},
+	NULL,
+	NULL
+};
+
+SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX] = {
+	NULL,
+	NULL,
+	NULL,
+	&(SENSADDR_GPIO_TypeDef){GPIOA, LL_GPIO_PIN_6},
+	&(SENSADDR_GPIO_TypeDef){GPIOA, LL_GPIO_PIN_7}
 };
 
 // MCP23008
@@ -68,7 +76,7 @@ uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_r
 
 // CAN
 uint8_t can_last_send_success = false;
-uint64_t can_last_send_time = 0;
+uint64_t can_last_send_time = 0, can_test_initialization_time = 0;
 
 // UI/Logic
 UI_Screen main_screen = {0};
@@ -78,15 +86,42 @@ uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = false, can_procedure_in_progress = false, main_functionality_active = false;
 
 // TODO: Extract all of these from FLASH memory
-uint32_t user_speed_min = 0, user_speed_max = 0, user_fan_speed_min = 0, user_fan_speed_max = SENSOR_VALUE_RANGE_FAN, user_wheel_diameter = 0, user_wheel_pulses = 0, user_seeder_width = 0, user_quota = 0, user_mass_per_turn = 0;
+uint32_t user_params_array[USER_PARAMS_COUNT] = {0};
 uint32_t current_user_area_total = 0, current_user_area_session = 0;
 
-float current_can_motor_speed = 0, current_seeder_speed = 0;
+uint8_t current_state_seeder_up = false;
+float current_can_motor_speed = 0, current_actual_motor_speed = 0, current_fan_speed = 0, current_seeder_speed = 0, current_quota = 0;
 
 uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}, {0}};
-uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start[ERROR_COUNT_TOTAL] = {0};
+uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start_end[ERROR_COUNT_TOTAL] = {0};
 
 // Resources
+uint8_t logo_ok_mark[LOGO_OK_MARK_SIZE] = {
+	0x1C, 0x00,
+  0x22, 0x00,
+  0x41, 0x00,
+  0xA0, 0x80,
+  0xA0, 0x80,
+  0x92, 0x80,
+  0x94, 0x80,
+  0x49, 0x00,
+  0x22, 0x00,
+  0x1C, 0x00
+};
+
+uint8_t logo_question_mark[LOGO_QUESTION_MARK_SIZE] = {
+  0xFF, 0x80,
+  0x80, 0x80,
+  0x9C, 0x80,
+  0xA2, 0x80,
+  0x84, 0x80,
+  0x88, 0x80,
+  0x80, 0x80,
+  0x88, 0x80,
+  0x80, 0x80,
+  0xFF, 0x80
+};
+
 uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE] = {
 	0x08, 0x00,
   0x14, 0x00,
@@ -99,6 +134,7 @@ uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE] = {
   0x80, 0x80,
   0xFF, 0x80
 };
+
 
 uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE] = {
 	0x1F,
@@ -130,6 +166,27 @@ static void MX_TIM4_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void setUserParameter(uint8_t pos, uint32_t parameter)
+{
+	user_params_array[pos] = parameter;
+}
+
+uint32_t getUserParameter(uint8_t pos)
+{
+	return user_params_array[pos];
+}
+
+uint8_t checkIfAllUserParamsAreSet()
+{
+	uint32_t check_sum = 0;
+	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
+	{
+		check_sum |= (user_params_array[i] == 0) << i;
+	}
+	return (check_sum == 0);
+}
+
+
 void sendCANPackage(float speed, uint8_t direction)
 {
 	uint8_t whole_part = floor(speed), fractional_part = round((speed - whole_part)*10); // 1 digit after the dot
@@ -145,7 +202,7 @@ void sendCANPackage(float speed, uint8_t direction)
 	uint8_t msg[8] = {0};
 	setMotorControl(speedData, 0x01700002, msg);
 	
-	uint8_t ok = LL_CAN_Send(CAN_MOTOR_ID, msg, true);
+	uint8_t ok = LL_CAN_Send(MOTOR_CAN_ID, msg, true);
 	if (ok)
 	{
 		can_last_send_time = sys_timer;
@@ -179,13 +236,16 @@ void sequence_turnDisplayOn(uint8_t on)
 		UI_BuildStartMenu(&main_screen);
 		display_buildUIScreen(&main_screen);
 		
-		//LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn on the sensors
+		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn on the sensors
 	}
 	else
 	{
+		ui_clearScreen(&main_screen);
 		gfx_clearBuffer();
 		display_update();
 		LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn off the sensors
+		can_procedure_in_progress = false;
+		can_should_send_test_package = false;
 	}
 	main_ui_on = on;
 }
@@ -241,17 +301,30 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-	LL_TIM_EnableIT_CC3(TIM1); // Enable capture/compare interrupt
-	LL_TIM_EnableIT_CC4(TIM1); 
-  LL_TIM_EnableIT_UPDATE(TIM1); // Enable update (overflow) interrupt
-  LL_TIM_EnableCounter(TIM1); // Enable counter
 	
-	LL_TIM_EnableIT_CC1(TIM2); // Enable capture/compare interrupt
-	LL_TIM_EnableIT_CC2(TIM2);
-	LL_TIM_EnableIT_CC3(TIM2);
-	LL_TIM_EnableIT_CC4(TIM2);
-  LL_TIM_EnableIT_UPDATE(TIM2); // Enable update (overflow) interrupt
-  LL_TIM_EnableCounter(TIM2); // Enable counter
+  LL_TIM_EnableIT_UPDATE(TIM1);
+  LL_TIM_EnableCounter(TIM1);
+	
+  LL_TIM_EnableIT_UPDATE(TIM2);
+  LL_TIM_EnableCounter(TIM2);
+	
+  LL_TIM_EnableIT_UPDATE(TIM3);
+  LL_TIM_EnableCounter(TIM3);
+	
+	for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
+	{
+		if (!((1 << i) & SENSADDR_MASK_TIMS)) continue;
+		SENSADDR_TIM_TypeDef* timer_address = sensor_address_timer[i];
+		
+		if (timer_address == NULL) continue;
+		switch(timer_address->channel)
+		{
+			case 1: LL_TIM_EnableIT_CC1(timer_address->timer); break;
+			case 2: LL_TIM_EnableIT_CC2(timer_address->timer); break;
+			case 3: LL_TIM_EnableIT_CC3(timer_address->timer); break;
+			case 4: LL_TIM_EnableIT_CC4(timer_address->timer); break;
+		}
+	}
 	
 	LL_TIM_EnableIT_UPDATE(TIM4);
   LL_TIM_EnableCounter(TIM4);
@@ -304,12 +377,11 @@ int main(void)
 					sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
 					time_now = sys_timer;
 					sensor_last_check_time[sensor_num] = time_now;
-					
 					// TODO: perform sensor value out-of-range checks
 				}
 			}
 			
-			if (user_speed_min != 0 && user_speed_max != 0 && user_fan_speed_min != 0 && user_fan_speed_max != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0 && user_seeder_width != 0 && user_quota != 0 && user_mass_per_turn != 0)
+			if (checkIfAllUserParamsAreSet())
 			{
 				// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
 			}
@@ -320,9 +392,18 @@ int main(void)
 		}
 		else if (can_should_send_test_package && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 		{
-			sendCANPackage(CAN_MOTOR_DEFAULT_SPEED_EMPTY, 0);
-			can_should_send_test_package = false;
+			time_now = sys_timer;
+			if (time_now - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
+			{
+				sendCANPackage(0, 0);
+				can_should_send_test_package = false;
+			}
+			else
+			{
+				sendCANPackage(MOTOR_DEFAULT_SPEED_EMPTY, 0);
+			}
 		}
+		
 		
 		time_now = sys_timer;
 		if (mcp23_check_required && (time_now - mcp23_check_last_time) >= MCP23008_DEBOUNCE_WAIT_TIME)
@@ -821,6 +902,7 @@ static void MX_GPIO_Init(void)
 
   /**/
   LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_5, LL_GPIO_MODE_INPUT);
+	LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_5, LL_GPIO_PULL_UP);
 
   /**/
   LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_2, LL_GPIO_MODE_INPUT);

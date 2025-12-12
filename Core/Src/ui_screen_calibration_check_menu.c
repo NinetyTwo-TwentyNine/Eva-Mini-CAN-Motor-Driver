@@ -18,35 +18,36 @@
 static char* labels[CCM_ELEMENT_TEXT_COUNT] = { "Скорость:", "Площадь:1/", "Масса:", "Начать проверку", "Время:", "Стоп", "Рас.масса:", "Масса:", "Рассчитать массу", "Отклонение:", "НМасса:", "Применить", "назад" };
 static uint8_t text_xpos[CCM_ELEMENT_TEXT_COUNT] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 static uint8_t text_ypos[CCM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52, 68, 84, 100, 116, 132, 148, 164, 180, 196 };
-static uint8_t text_offset_scalers[CCM_ELEMENT_TEXT_COUNT] = { 6, 4, 10, 0, 8, 0, 9, 9, 0, 7, 10, 0, 0 };
+static uint8_t text_offset_scalers[CCM_ELEMENT_TEXT_COUNT] = { 6, 4, 10, 0, 11, 0, 9, 9, 0, 7, 10, 0, 0 };
 static const uint8_t speed_item_id = 1, area_item_id = 2, mass_per_turn_item_id = 3, begin_check_id = 4, time_item_id = 5, stop_check_id = 6, counted_mass_item_id = 7, actual_mass_item_id = 8, count_params_id = 9, deviation_item_id = 10, new_mass_item_id = 11, apply_id = 12, back_id = 13;
 static uint8_t label_ids[CCM_ELEMENT_TEXT_COUNT] = { speed_item_id, area_item_id, mass_per_turn_item_id, begin_check_id, time_item_id, stop_check_id, counted_mass_item_id, actual_mass_item_id, count_params_id, deviation_item_id, new_mass_item_id, apply_id, back_id };
 static uint8_t label_tab_ids[CCM_ELEMENT_TEXT_COUNT] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
 
-#define CCM_ELEMENT_VAL_COUNT 9
+#define CCM_ELEMENT_VAL_COUNT 10
 #define CCM_POS_SPEED_VAL 0
 #define CCM_POS_AREA_DIVIDER_VAL 1
 #define CCM_POS_MASS_PER_TURN_VAL 2
-#define CCM_POS_TIME_MIN_VAL 3
-#define CCM_POS_TIME_SEC_VAL 4
-#define CCM_POS_COUNTED_MASS_VAL 5
-#define CCM_POS_ACTUAL_MASS_VAL 6
-#define CCM_POS_DEVIATION_VAL 7
-#define CCM_POS_NEW_MASS_VAL 8
+#define CCM_POS_TIME_HOUR_VAL 3
+#define CCM_POS_TIME_MIN_VAL 4
+#define CCM_POS_TIME_SEC_VAL 5
+#define CCM_POS_COUNTED_MASS_VAL 6
+#define CCM_POS_ACTUAL_MASS_VAL 7
+#define CCM_POS_DEVIATION_VAL 8
+#define CCM_POS_NEW_MASS_VAL 9
 
-static uint32_t speed_val, area_divider_val, mass_per_turn_val, time_min_val, time_sec_val, counted_mass_val, actual_mass_val, deviation_percent_val, new_mass_val;
-static uint32_t* val_ptrs[CCM_ELEMENT_VAL_COUNT] = { &speed_val, &area_divider_val, &mass_per_turn_val, &time_min_val, &time_sec_val, &counted_mass_val, &actual_mass_val, &deviation_percent_val, &new_mass_val };
-static char* val_types[CCM_ELEMENT_VAL_COUNT] = { "км/ч", "га", "кг/об", "мин", "с", "кг", "кг", "%", "кг/га" };
-static uint8_t val_xpos[CCM_ELEMENT_VAL_COUNT] = { 58, 64, 40, 40, 70, 64, 40, 70, 46 };
-static uint8_t val_ypos[CCM_ELEMENT_VAL_COUNT] = { 4, 20, 36, 68, 68, 100, 116, 148, 164 };
-static uint8_t val_allowed_lengths[CCM_ELEMENT_VAL_COUNT] = { 2, 1, 4, 2, 2, 6, 6, 5, 4 };
-static uint8_t val_lengths_after_dot[CCM_ELEMENT_VAL_COUNT] = { 0, 0, 3, 0, 0, 3, 3, 2, 3 };
-static const uint8_t speed_val_id = 21, area_divider_val_id = 22, mass_per_turn_val_id = 23, time_min_val_id = 24, time_sec_val_id = 25, counted_mass_val_id = 26, actual_mass_val_id = 27, deviation_percent_val_id = 28, new_mass_val_id = 29;
-static uint8_t val_ids[CCM_ELEMENT_VAL_COUNT] = { speed_val_id, area_divider_val_id, mass_per_turn_val_id, time_min_val_id, time_sec_val_id, counted_mass_val_id, actual_mass_val_id, deviation_percent_val_id, new_mass_val_id };
+static uint32_t speed_val, area_divider_val, mass_per_turn_val, time_hour_val, time_min_val, time_sec_val, counted_mass_val, actual_mass_val, deviation_percent_val, new_mass_val;
+static uint32_t* val_ptrs[CCM_ELEMENT_VAL_COUNT] = { &speed_val, &area_divider_val, &mass_per_turn_val, &time_hour_val, &time_min_val, &time_sec_val, &counted_mass_val, &actual_mass_val, &deviation_percent_val, &new_mass_val };
+static char* val_types[CCM_ELEMENT_VAL_COUNT] = { "км/ч", "га", "кг/об", "ч", "мин", "с", "кг", "кг", "%", "кг/га" };
+static uint8_t val_xpos[CCM_ELEMENT_VAL_COUNT] = { 58, 64, 40, 40, 58, 88, 64, 40, 70, 46 };
+static uint8_t val_ypos[CCM_ELEMENT_VAL_COUNT] = { 4, 20, 36, 68, 68, 68, 100, 116, 148, 164 };
+static uint8_t val_allowed_lengths[CCM_ELEMENT_VAL_COUNT] = { 2, 1, 4, 2, 2, 2, 6, 6, 5, 4 };
+static uint8_t val_lengths_after_dot[CCM_ELEMENT_VAL_COUNT] = { 0, 0, 3, 0, 0, 0, 3, 3, 2, 3 };
+static const uint8_t speed_val_id = 21, area_divider_val_id = 22, mass_per_turn_val_id = 23, time_hour_val_id = 24, time_min_val_id = 25, time_sec_val_id = 26, counted_mass_val_id = 27, actual_mass_val_id = 28, deviation_percent_val_id = 29, new_mass_val_id = 30;
+static uint8_t val_ids[CCM_ELEMENT_VAL_COUNT] = { speed_val_id, area_divider_val_id, mass_per_turn_val_id, time_hour_val_id, time_min_val_id, time_sec_val_id, counted_mass_val_id, actual_mass_val_id, deviation_percent_val_id, new_mass_val_id };
 
 
 static uint8_t possible_area_divider_vals[] = {1, 2, 4, 8, 16}, selected_area_divider_pos;
-static uint8_t selected_slot, selected_slot_gone, seconds_selected;
+static uint8_t selected_slot, selected_slot_gone;
 
 static uint32_t initial_time_total, total_motor_movement_time;
 static uint64_t time_save_ui_1 = 0, time_save_ui_2 = 0;
@@ -77,7 +78,7 @@ static int16_t CCMHelper_GetValPosFromItemId(uint8_t item_id)
 		case speed_item_id: val_pos = CCM_POS_SPEED_VAL; break;
 		case area_item_id: val_pos = CCM_POS_AREA_DIVIDER_VAL; break;
 		case mass_per_turn_item_id: val_pos = CCM_POS_MASS_PER_TURN_VAL; break;
-		case time_item_id: val_pos = CCM_POS_TIME_MIN_VAL + seconds_selected; break;
+		case time_item_id: val_pos = CCM_POS_TIME_SEC_VAL; break;
 		case counted_mass_item_id: val_pos = CCM_POS_COUNTED_MASS_VAL; break;
 		case actual_mass_item_id: val_pos = CCM_POS_ACTUAL_MASS_VAL; break;
 		case deviation_item_id: val_pos = CCM_POS_DEVIATION_VAL; break;
@@ -169,10 +170,16 @@ static void CCMHelper_SetElementFunctionality_Array(UI_Screen* screen, uint8_t* 
 
 static void CCMHelper_CalculateRequiredTime()
 {
-	initial_time_total = calculateTimeMillis_fromSpeed(speed_val, user_seeder_width, area_divider_val);
+	initial_time_total = calculateTimeMillis_fromArea(speed_val, getUserParameter(USER_PARAM_SEEDER_WIDTH), area_divider_val);
+	uint32_t time_copy = initial_time_total / MILLIS_IN_SECOND;
 	
-	time_min_val = initial_time_total / SECONDS_IN_MINUTE / MILLIS_IN_SECOND;
-	time_sec_val = (initial_time_total - time_min_val * SECONDS_IN_MINUTE * MILLIS_IN_SECOND) / MILLIS_IN_SECOND;
+	time_hour_val = time_copy / SECONDS_IN_MINUTE / MINUTES_IN_HOUR;
+	time_copy -= time_hour_val * SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
+	
+	time_min_val = time_copy / SECONDS_IN_MINUTE;
+	time_copy -= time_min_val * SECONDS_IN_MINUTE;
+	
+	time_sec_val = time_copy;
 }
 
 //==================================
@@ -195,18 +202,27 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 		
 		if (total_motor_movement_time % 1000 == 0)
 		{
-			if (time_sec_val != 0 || time_min_val != 0)
+			if (time_sec_val != 0 || time_min_val != 0 || time_hour_val != 0)
 			{
 				if (time_sec_val == 0)
 				{
 					time_sec_val = 59;
-					time_min_val -= 1;
+					if (time_min_val == 0)
+					{
+						time_min_val = 59;
+						time_hour_val -= 1;
+					}
+					else
+					{
+						time_min_val -= 1;
+					}
 				}
 				else
 				{
 					time_sec_val -= 1;
 				}
 			}
+			CCMHelper_ConvertValToText(screen, CCM_POS_TIME_HOUR_VAL);
 			CCMHelper_ConvertValToText(screen, CCM_POS_TIME_MIN_VAL);
 			CCMHelper_ConvertValToText(screen, CCM_POS_TIME_SEC_VAL);
 		}
@@ -234,7 +250,7 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 		ui_update_required = true;
 	}
 	
-	if (sys_timer - can_last_send_time > 5000 && sys_timer - time_save_ui_2 > 1000)
+	if (sys_timer - can_last_send_time > 3000 && sys_timer - time_save_ui_2 > 1000)
 	{
 		switch_to_start_menu_allowed = true;
 		
@@ -264,13 +280,16 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				}
 				else
 				{
-					uint32_t min_val = 0, max_val = 0xFFFFFFFF;
 					if (val_pos == CCM_POS_SPEED_VAL)
 					{
-						min_val = user_speed_min;
-						max_val = user_speed_max;
+						uint32_t min_val = getUserParameter(USER_PARAM_SPEED_MIN);
+						uint32_t max_val = getUserParameter(USER_PARAM_SPEED_MAX);
+						utils_edit_value_by_slot_with_min_max(val_ptr, selected_slot, val_allowed_lengths[val_pos], press_type, min_val, max_val);
 					}
-					utils_edit_value_by_slot_with_min_max(val_ptr, selected_slot, val_allowed_lengths[val_pos], press_type, min_val, max_val);
+					else
+					{
+						utils_edit_value_by_slot(val_ptr, selected_slot, press_type, 0);
+					}
 				}
 				CCMHelper_UpdateValStr_SlotBlink(screen, false);
 			}
@@ -281,7 +300,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				case back_id: UI_BuildSeederOptionsMenu(screen); break;
 				case begin_check_id:
 				{
-					current_can_motor_speed = calculateMotorSpeed_fromTime(user_quota, area_divider_val, mass_per_turn_val, initial_time_total);
+					current_can_motor_speed = calculateMotorSpeed_fromTime(getUserParameter(USER_PARAM_QUOTA), area_divider_val, mass_per_turn_val, initial_time_total);
 					
 					uint8_t deselection_array[] = { CCM_POS_SPEED_ITEM, CCM_POS_AREA_ITEM };
 					CCMHelper_SetElementFunctionality_Array(screen, deselection_array, sizeof(deselection_array), 1, 0);
@@ -353,10 +372,11 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				case apply_id:
 				{
 					// TODO: save to FLASH memory
-					user_mass_per_turn = new_mass_val;
+					setUserParameter(USER_PARAM_MASS_PER_TURN, new_mass_val);
 					
-					user_speed_min = calculateMinMotorSpeed(user_quota, user_seeder_width, new_mass_val);
-					user_speed_max = calculateMaxMotorSpeed(user_quota, user_seeder_width, new_mass_val);
+					uint32_t user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameter(USER_PARAM_QUOTA);
+					setUserParameter(USER_PARAM_SPEED_MIN, calculateMinMotorSpeed(user_quota, user_seeder_width, new_mass_val));
+					setUserParameter(USER_PARAM_SPEED_MAX, calculateMaxMotorSpeed(user_quota, user_seeder_width, new_mass_val));
 					
 					break;
 				}
@@ -425,10 +445,12 @@ static void CalibrationCheckMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_El
 					{
 						CCMHelper_CalculateRequiredTime();
 						
+						CCMHelper_ConvertValToText(screen, CCM_POS_TIME_HOUR_VAL);
 						CCMHelper_ConvertValToText(screen, CCM_POS_TIME_MIN_VAL);
 						CCMHelper_ConvertValToText(screen, CCM_POS_TIME_SEC_VAL);
 						
 						uint8_t motor_speed_check = 0;
+						uint32_t user_quota = getUserParameter(USER_PARAM_QUOTA);
 						if (initial_time_total != 0 && user_quota != 0 && mass_per_turn_val != 0)
 						{
 							counted_mass_val = round( (float)user_quota * GRAMS_IN_KILOGRAM / (float)area_divider_val );
@@ -485,6 +507,12 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 	selected_slot_gone = false;
 	selected_area_divider_pos = 0;
 	total_motor_movement_time = 0;
+	
+	uint32_t user_speed_min = getUserParameter(USER_PARAM_SPEED_MIN),
+					 user_speed_max = getUserParameter(USER_PARAM_SPEED_MAX),
+					 user_quota = getUserParameter(USER_PARAM_QUOTA),
+					 user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH),
+					 user_mass_per_turn = getUserParameter(USER_PARAM_MASS_PER_TURN);
 	
   for (uint8_t i = 0; i < CCM_ELEMENT_TEXT_COUNT; i++)
   {

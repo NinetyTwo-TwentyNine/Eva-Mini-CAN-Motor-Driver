@@ -17,12 +17,13 @@
 #define SQUARE_METERS_IN_HECTARE 10000
 
 #define MOTOR_SPEED_LIMIT_MIN 0
-#define MOTOR_SPEED_LIMIT_MAX 256
+#define MOTOR_SPEED_LIMIT_MAX 200
 
 
-uint32_t calculateTimeMillis_fromSpeed(uint32_t seeder_speed_kmh, uint32_t seeder_width_m, uint8_t area_divider);
+uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder_width_m, uint8_t area_divider);
 float calculateMotorSpeed_fromTime(uint32_t quota_kg_per_ha, uint8_t area_divider, uint32_t mass_per_turn_g, uint32_t time_total_millis);
 float calculateMotorSpeed_fromSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g, uint32_t seeder_speed_kmh);
+float calculateQuota_fromSpeed(uint32_t seeder_width_m, float seeder_speed_kmh, uint32_t mass_per_turn_g, float motor_speed);
 
 uint8_t performMotorSpeedCheck(float motor_speed);
 uint32_t calculateMinMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g);

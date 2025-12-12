@@ -58,7 +58,7 @@ static void FSMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (!FSMHelper_CheckValPosValidity(val_pos)) return;
 	
 	uint8_t val_id = val_ids[val_pos], length = sensor_val_allowed_length;
-	uint16_t value = *val_ptrs[val_pos];
+	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
 	UI_Element_Visual *e = ui_findVisualById(screen, val_id);
@@ -196,8 +196,8 @@ static void FanSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element_P
 							max_sensor_val = min_sensor_val + SENSOR_VALUE_RANGE_FAN;
 							FSMHelper_ConvertValToText(screen, FSM_POS_SENSOR_MAX_VAL);
 						}
-						user_fan_speed_min = min_sensor_val;
-						user_fan_speed_max = max_sensor_val;
+						setUserParameter(USER_PARAM_FAN_SPEED_MIN, min_sensor_val);
+						setUserParameter(USER_PARAM_FAN_SPEED_MAX, max_sensor_val);
 						break;
 					}
 					case max_item_id:
@@ -208,8 +208,8 @@ static void FanSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element_P
 							min_sensor_val = max_sensor_val - SENSOR_VALUE_RANGE_FAN;
 							FSMHelper_ConvertValToText(screen, FSM_POS_SENSOR_MIN_VAL);
 						}
-						user_fan_speed_min = min_sensor_val;
-						user_fan_speed_max = max_sensor_val;
+						setUserParameter(USER_PARAM_FAN_SPEED_MIN, min_sensor_val);
+						setUserParameter(USER_PARAM_FAN_SPEED_MAX, max_sensor_val);
 						break;
 					}
 				}
@@ -265,8 +265,8 @@ void UI_BuildFanSensorMenu(UI_Screen* screen)
   {
 		*val_ptrs[i] = 0;
 	}
-	min_sensor_val = user_fan_speed_min;
-	max_sensor_val = user_fan_speed_max;
+	min_sensor_val = getUserParameter(USER_PARAM_FAN_SPEED_MIN);
+	max_sensor_val = getUserParameter(USER_PARAM_FAN_SPEED_MAX);
 	
   for (uint8_t i = 0; i < FSM_ELEMENT_VAL_COUNT; i++)
   {

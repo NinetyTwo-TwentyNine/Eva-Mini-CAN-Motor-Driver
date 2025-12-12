@@ -96,7 +96,7 @@ static void CMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (!CMHelper_CheckValPosValidity(val_pos)) return;
 	
 	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
-	uint16_t value = *val_ptrs[val_pos];
+	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
 	UI_Element_Visual *e = ui_findVisualById(screen, val_id);
@@ -215,7 +215,7 @@ static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 		}
 	}
 	
-	if (sys_timer - can_last_send_time > 5000 && sys_timer - time_save_ui_2 > 1000)
+	if (sys_timer - can_last_send_time > 3000 && sys_timer - time_save_ui_2 > 1000)
 	{
 		switch_to_start_menu_allowed = true;
 		
@@ -265,6 +265,8 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					
 					time_save_ui_2 = sys_timer;
 					switch_to_start_menu_allowed = false;
+					
+					can_test_initialization_time = sys_timer;
 					can_should_send_test_package = true;
 					break;
 				}
@@ -309,9 +311,9 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					counted_min_speed_val = calculateMinMotorSpeed(quota_val, width_val, counted_mass_val);
 					counted_max_speed_val = calculateMaxMotorSpeed(quota_val, width_val, counted_mass_val);
 					
-					user_mass_per_turn = counted_mass_val;
-					user_speed_min = counted_min_speed_val;
-					user_speed_max = counted_max_speed_val;
+					setUserParameter(USER_PARAM_MASS_PER_TURN, counted_mass_val);
+					setUserParameter(USER_PARAM_SPEED_MIN, counted_min_speed_val);
+					setUserParameter(USER_PARAM_SPEED_MAX, counted_max_speed_val);
 					
 					CMHelper_SetElementFunctionality(screen, CM_POS_BEGIN_CALIBRATION, 0, 0);
 					
@@ -402,18 +404,19 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 					case width_item_id: case quota_item_id:
 					{
 						// TODO: Handle width and quota being saved to FLASH memory
-						if (width_val != user_seeder_width || quota_val != user_quota)
+						if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH) || quota_val != getUserParameter(USER_PARAM_QUOTA))
 						{
-							user_mass_per_turn = 0;
+							setUserParameter(USER_PARAM_MASS_PER_TURN, 0);
+							setUserParameter(USER_PARAM_SPEED_MIN, 0);
+							setUserParameter(USER_PARAM_SPEED_MAX, 0);
+							if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH))
+							{
+								current_user_area_session = 0;
+							}
 						}
-						if (element_id == width_item_id)
-						{
-							user_seeder_width = width_val;
-						}
-						else
-						{
-							user_quota = quota_val;
-						}
+						
+						setUserParameter(USER_PARAM_SEEDER_WIDTH, width_val);
+						setUserParameter(USER_PARAM_QUOTA, quota_val);
 						
 						if (width_val != 0 && quota_val != 0)
 						{
@@ -503,8 +506,8 @@ void UI_BuildCalibrationMenu(UI_Screen* screen)
   {
 		*val_ptrs[i] = 0;
 	}
-	width_val = user_seeder_width;
-	quota_val = user_quota;
+	width_val = getUserParameter(USER_PARAM_SEEDER_WIDTH);
+	quota_val = getUserParameter(USER_PARAM_QUOTA);
 	if (width_val != 0 && quota_val != 0)
 	{
 		CMHelper_SetElementFunctionality(screen, CM_POS_FILL_MOTOR, 1, 1);

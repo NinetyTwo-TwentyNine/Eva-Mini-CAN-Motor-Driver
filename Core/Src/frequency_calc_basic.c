@@ -26,7 +26,7 @@ uint32_t get_apb_timer_clock(TIM_TypeDef* sensor_timer) {
 float calculate_frequency(uint8_t sensor_num)
 {
 	float delta = IC_Array32[IC_ARRAY32_POS_DIFF][sensor_num];
-	TIM_TypeDef* sensor_timer = sensor_address[sensor_num]->timer;
+	TIM_TypeDef* sensor_timer = sensor_address_timer[sensor_num]->timer;
 	uint32_t clock_speed = get_apb_timer_clock(sensor_timer);
 	uint32_t timer_clk_hz = clock_speed / (sensor_timer->PSC + 1);
 	
@@ -40,7 +40,7 @@ void capture_value(TIM_TypeDef* timer, uint8_t channel)
 	uint8_t sensor_num;
 	for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
 	{
-		if (sensor_address[i]->timer == timer && sensor_address[i]->channel == channel)
+		if (sensor_address_timer[i]->timer == timer && sensor_address_timer[i]->channel == channel)
 		{
 			sensor_num = i;
 			break;
@@ -61,12 +61,12 @@ void capture_value(TIM_TypeDef* timer, uint8_t channel)
 	}
 	
   uint32_t current_capture;
-  switch(sensor_address[sensor_num]->channel)
+  switch(sensor_address_timer[sensor_num]->channel)
   {
-    case 1: current_capture = LL_TIM_IC_GetCaptureCH1(sensor_address[sensor_num]->timer); break;
-    case 2: current_capture = LL_TIM_IC_GetCaptureCH2(sensor_address[sensor_num]->timer); break;
-    case 3: current_capture = LL_TIM_IC_GetCaptureCH3(sensor_address[sensor_num]->timer); break;
-    case 4: current_capture = LL_TIM_IC_GetCaptureCH4(sensor_address[sensor_num]->timer); break;
+    case 1: current_capture = LL_TIM_IC_GetCaptureCH1(sensor_address_timer[sensor_num]->timer); break;
+    case 2: current_capture = LL_TIM_IC_GetCaptureCH2(sensor_address_timer[sensor_num]->timer); break;
+    case 3: current_capture = LL_TIM_IC_GetCaptureCH3(sensor_address_timer[sensor_num]->timer); break;
+    case 4: current_capture = LL_TIM_IC_GetCaptureCH4(sensor_address_timer[sensor_num]->timer); break;
 		default: return;
   }
   IC_Array32[IC_ARRAY32_POS_VAL2][sensor_num] = current_capture;
@@ -78,7 +78,7 @@ void capture_value(TIM_TypeDef* timer, uint8_t channel)
 	}
   if (!IC_Array8[IC_ARRAY8_POS_CAPTURE_INITIAL][sensor_num]) { 
     // Calculate difference, considering overflows
-    IC_Array32[IC_ARRAY32_POS_DIFF][sensor_num] = (IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][sensor_num] * (sensor_address[sensor_num]->timer->ARR + 1) + current_capture - last_capture);
+    IC_Array32[IC_ARRAY32_POS_DIFF][sensor_num] = (IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][sensor_num] * (sensor_address_timer[sensor_num]->timer->ARR + 1) + current_capture - last_capture);
     
     IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] = 1;
     IC_Array8[IC_ARRAY8_POS_OVERFLOW_COUNT][sensor_num] = 0; // reset overflow counter
