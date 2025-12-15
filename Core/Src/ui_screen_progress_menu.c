@@ -18,7 +18,8 @@ static uint8_t label_tab_ids[PM_ELEMENT_TEXT_COUNT] = { 0, 2, 3, 4 };
 #define PM_POS_AREA_TOTAL_VAL 0
 #define PM_POS_AREA_SESSION_VAL 1
 
-static uint32_t* val_ptrs[PM_ELEMENT_VAL_COUNT] = { &current_user_area_total, &current_user_area_session };
+static uint32_t area_total_val, area_session_val;
+static uint32_t* val_ptrs[PM_ELEMENT_VAL_COUNT] = { &area_total_val, &area_session_val };
 static char* val_types[PM_ELEMENT_VAL_COUNT] = { "га", "га" };
 static uint8_t val_xpos[PM_ELEMENT_VAL_COUNT] = { 8, 62 };
 static uint8_t val_ypos[PM_ELEMENT_VAL_COUNT] = { 20, 36 };
@@ -61,6 +62,9 @@ static void PMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void ProgressMenu_ScreenCallback(UI_Screen* screen)
 {
+	area_total_val = floor(current_user_area_total);
+	area_session_val = floor(current_user_area_session);
+	
 	PMHelper_ConvertValToText(screen, PM_POS_AREA_TOTAL_VAL);
 	PMHelper_ConvertValToText(screen, PM_POS_AREA_SESSION_VAL);
 	
@@ -126,6 +130,9 @@ void UI_BuildProgressMenu(UI_Screen* screen)
 			ProgressMenu_OnItemPressed_Main, NULL, NULL
 		);
   }
+	
+	area_total_val = floor(current_user_area_total);
+	area_session_val = floor(current_user_area_session);
 	
   for (uint8_t i = 0; i < PM_ELEMENT_VAL_COUNT; i++)
   {

@@ -50,6 +50,7 @@ extern "C" {
 #include <stdbool.h>
 #include <math.h>
 
+#include "stm32f1xx_ll_flash.h" // Our own LL Flash driver replacement for STM32F103
 #include "stm32f1xx_ll_can.h" // Our own LL CAN driver replacement for STM32F103
 
 #include "flash_control.h"
@@ -58,7 +59,7 @@ extern "C" {
 #include "mcp23008.h"
 #include "can_parser.h"
 #include "frequency_calc_basic.h"
-#include "params_calculation.h"
+#include "user_params_management.h"
 
 #include "ui_screen_system.h"
 
@@ -213,6 +214,8 @@ extern uint8_t ui_update_required, main_ui_on, switch_to_start_menu_allowed;
 
 
 #define MOTOR_CAN_ID 0x16000001
+#define MOTOR_SPEED_LIMIT_MIN 0
+#define MOTOR_SPEED_LIMIT_MAX 200
 #define MOTOR_DEFAULT_SPEED_EMPTY 30 // Just enough for one transmission to make a spin
 
 #define SENSOR_VALUE_RANGE_FAN 20
@@ -231,7 +234,12 @@ extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_fun
 #define USER_PARAM_QUOTA 7
 #define USER_PARAM_MASS_PER_TURN 8
 
-extern uint32_t current_user_area_total, current_user_area_session;
+#define USER_DATA_SAVE_PAGE_ADDR 0x0800F800
+#define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 2)*4 + 2)
+
+#define USER_DATA_AREA_SAVE_PRECISION 1 // 1 digit after comma
+
+extern float current_user_area_total, current_user_area_session;
 
 void setUserParameter(uint8_t pos, uint32_t parameter);
 uint32_t getUserParameter(uint8_t pos);
@@ -240,6 +248,9 @@ uint8_t checkIfAllUserParamsAreSet(void);
 extern uint8_t current_state_seeder_up;
 extern float current_can_motor_speed, current_actual_motor_speed, current_fan_speed, current_seeder_speed, current_quota;
 
+
+#define BUZZER_PORT GPIOA
+#define BUZZER_PIN LL_GPIO_PIN_9
 
 #define ERROR_COUNT_TOTAL 6
 #define ERROR_TYPE_FAN 0
@@ -261,9 +272,6 @@ extern float current_can_motor_speed, current_actual_motor_speed, current_fan_sp
 #define ERROR_NOTIFICATION_COMPLETE 2
 #define ERROR_NOTIFICATION_IN_PROGRESS 3
 #define ERROR_NOTIFICATION_BEEP_COUNTER 4
-
-#define BUZZER_PORT GPIOA
-#define BUZZER_PIN LL_GPIO_PIN_9
 
 extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
 extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start_end[ERROR_COUNT_TOTAL];

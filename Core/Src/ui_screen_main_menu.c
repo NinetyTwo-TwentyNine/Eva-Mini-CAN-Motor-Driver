@@ -21,8 +21,8 @@ static uint8_t label_ids[MM_ELEMENT_TEXT_COUNT] = { error_item_id, norm_item_id,
 #define MM_POS_MOTOR_VAL 2
 #define MM_POS_AREA_VAL 3
 
-static uint32_t quota_val, fan_speed_val, motor_speed_val;
-static uint32_t* val_ptrs[MM_ELEMENT_VAL_COUNT] = { &quota_val, &fan_speed_val, &motor_speed_val, &current_user_area_session };
+static uint32_t quota_val, fan_speed_val, motor_speed_val, area_session_val;
+static uint32_t* val_ptrs[MM_ELEMENT_VAL_COUNT] = { &quota_val, &fan_speed_val, &motor_speed_val, &area_session_val };
 static char *val_types[] = { "кг/га", "об/мин", "об/мин", "га" };
 static uint8_t val_allowed_lengths[MM_ELEMENT_VAL_COUNT] = { 3, 4, 3, 1 };
 static uint8_t val_xpos[MM_ELEMENT_VAL_COUNT] = { 42, 16, 16, 92 };
@@ -93,6 +93,7 @@ static void MainMenu_ScreenCallback(UI_Screen* screen)
 	quota_val = round(current_quota);
 	fan_speed_val = round(current_fan_speed);
 	motor_speed_val = round(current_actual_motor_speed);
+	area_session_val = floor(current_user_area_session);
 	
 	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
 	{
@@ -184,9 +185,10 @@ void UI_BuildMainMenu(UI_Screen* screen)
     text_elem->id = label_ids[i];
 	}
 	
-	quota_val = current_quota;
-	fan_speed_val = current_fan_speed;
-	motor_speed_val = current_actual_motor_speed;
+	quota_val = round(current_quota);
+	fan_speed_val = round(current_fan_speed);
+	motor_speed_val = round(current_actual_motor_speed);
+	area_session_val = floor(current_user_area_session);
 	
 	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
 	{
@@ -233,4 +235,5 @@ void UI_BuildMainMenu(UI_Screen* screen)
 	switch_to_start_menu_allowed = true;
 	
 	screen->general_callback(screen);
+	ui_last_callback_time = sys_timer;
 }

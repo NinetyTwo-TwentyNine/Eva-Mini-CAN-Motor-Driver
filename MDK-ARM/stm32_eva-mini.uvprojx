@@ -415,6 +415,11 @@
           <GroupName>Drivers/STM32F1xx_HAL_Driver</GroupName>
           <Files>
             <File>
+              <FileName>stm32f1xx_ll_flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_ll_flash.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f1xx_ll_can.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_ll_can.c</FilePath>
@@ -566,9 +571,9 @@
               <FilePath>..\Core\Inc\frequency_calc_basic.h</FilePath>
             </File>
             <File>
-              <FileName>params_calculation.h</FileName>
+              <FileName>user_params_management.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Core\Inc\params_calculation.h</FilePath>
+              <FilePath>..\Core\Inc\user_params_management.h</FilePath>
             </File>
             <File>
               <FileName>ui_screen_system.h</FileName>
@@ -666,9 +671,9 @@
               <FilePath>..\Core\Src\frequency_calc_basic.c</FilePath>
             </File>
             <File>
-              <FileName>params_calculation.c</FileName>
+              <FileName>user_params_management.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Core\Src\params_calculation.c</FilePath>
+              <FilePath>..\Core\Src\user_params_management.c</FilePath>
             </File>
             <File>
               <FileName>ui_screen_system.c</FileName>

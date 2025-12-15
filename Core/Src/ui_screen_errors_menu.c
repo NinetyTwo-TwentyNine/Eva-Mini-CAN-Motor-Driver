@@ -185,4 +185,7 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 	
 	//main_functionality_active = true;
 	switch_to_start_menu_allowed = true;
+	
+	screen->general_callback(screen);
+	ui_last_callback_time = sys_timer;
 }

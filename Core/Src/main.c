@@ -87,7 +87,7 @@ uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = fal
 
 // TODO: Extract all of these from FLASH memory
 uint32_t user_params_array[USER_PARAMS_COUNT] = {0};
-uint32_t current_user_area_total = 0, current_user_area_session = 0;
+float current_user_area_total = 0, current_user_area_session = 0;
 
 uint8_t current_state_seeder_up = false;
 float current_can_motor_speed = 0, current_actual_motor_speed = 0, current_fan_speed = 0, current_seeder_speed = 0, current_quota = 0;
@@ -435,16 +435,6 @@ int main(void)
 						break;
 					case MATRIX_POS_BUTTON_POWER:
 						sequence_turnDisplayOn(!main_ui_on);
-					default:
-						/*
-						LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-						LL_mDelay(60);
-						LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
-						LL_mDelay(60);
-						LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-						LL_mDelay(60);
-						LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
-						*/;
 				}
 			}
 		}
