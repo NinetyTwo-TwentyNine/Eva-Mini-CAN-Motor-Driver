@@ -319,24 +319,23 @@ void TIM4_IRQHandler(void)
 		{
 			if (error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && !error_state_array[ERROR_STATE_ACTIVE][i])
 			{
-				error_state_array[ERROR_STATE_PREACTIVE][i] = false;
-				error_state_array[ERROR_STATE_ACTIVE][i] = true;
-				error_last_activated[i] = time_now;
+				updateErrorState(ERROR_STATE_PREACTIVE, i, false);
+				updateErrorState(ERROR_STATE_ACTIVE, i, true);
 			}
 			else if (!error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && error_state_array[ERROR_STATE_ACTIVE][i])
 			{
-				error_state_array[ERROR_STATE_ACTIVE][i] = false;
-				error_state_array[ERROR_NOTIFICATION_COMPLETE][i] = false;
+				updateErrorState(ERROR_STATE_ACTIVE, i, false);
+				updateErrorState(ERROR_NOTIFICATION_COMPLETE, i, false);
 				if (error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i])
 				{
 					LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
-					error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][i] = false;
+					updateErrorState(ERROR_NOTIFICATION_IN_PROGRESS, i, false);
 				}
 			}
 			
 			if (error_state_array[ERROR_STATE_PREACTIVE][i] && error_state_array[ERROR_STATE_ACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_RESET_ALLOW_TIME)
 			{
-				error_state_array[ERROR_STATE_PREACTIVE][i] = false; // Error source should constantly update preactive error state in order for the error to not go away after some time
+				updateErrorState(ERROR_STATE_PREACTIVE, i, false); // Error source should constantly update preactive error state in order for the error to not go away after some time
 			}
 		}
 		
@@ -377,27 +376,24 @@ void TIM4_IRQHandler(void)
 		
 		if (should_start_notification)
 		{
-			error_notification_start_end[chosen_index] = time_now;
-			error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = true;
-			error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] = 0;
+			updateErrorState(ERROR_NOTIFICATION_IN_PROGRESS, chosen_index, true);
 			LL_GPIO_SetOutputPin(buzzer_port, buzzer_pin_mask);
 		}
 		else if (should_continue_notification)
 		{
 			uint32_t time_diff = time_now - error_notification_start_end[chosen_index];
-			if (error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] >= (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
+			if (error_notification_beep_counter[chosen_index] >= (ERROR_NOTIFICATION_BEEP_COUNT * 2 - 1))
 			{
-				error_state_array[ERROR_NOTIFICATION_COMPLETE][chosen_index] = true;
-				error_state_array[ERROR_NOTIFICATION_IN_PROGRESS][chosen_index] = false;
-				error_notification_start_end[chosen_index] = time_now;
+				updateErrorState(ERROR_NOTIFICATION_COMPLETE, chosen_index, true);
+				updateErrorState(ERROR_NOTIFICATION_IN_PROGRESS, chosen_index, false);
 				LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
 			}
-			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * (error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index] + 1))
+			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * (error_notification_beep_counter[chosen_index] + 1))
 			{
 				LL_GPIO_ResetOutputPin(buzzer_port, buzzer_pin_mask);
-				error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index]++;
+				error_notification_beep_counter[chosen_index]++;
 			}
-			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * error_state_array[ERROR_NOTIFICATION_BEEP_COUNTER][chosen_index])
+			else if (time_diff > ERROR_NOTIFICATION_BEEP_TIME * error_notification_beep_counter[chosen_index])
 			{
 				LL_GPIO_SetOutputPin(buzzer_port, buzzer_pin_mask);
 			}
@@ -507,11 +503,7 @@ void USB_HP_CAN1_TX_IRQHandler(void)
           // TX ERROR
 					can_last_send_success = false;
         }
-				if (!error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN] && !can_last_send_success)
-				{
-					error_last_activated[ERROR_TYPE_CAN] = sys_timer;
-				}
-				error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN] = !can_last_send_success;
+				updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_CAN, !can_last_send_success);
 
         // Required: clear RQCP0 to stop interrupts
         CAN1->TSR |= CAN_TSR_RQCP0;
@@ -535,11 +527,7 @@ void CAN1_SCE_IRQHandler(void)
     {
         // Check ESR for the specific error if needed
 				can_last_send_success = false;
-				if (!error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN])
-				{
-					error_last_activated[ERROR_TYPE_CAN] = sys_timer;
-				}
-				error_state_array[ERROR_STATE_PREACTIVE][ERROR_TYPE_CAN] = true;
+				updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_CAN, !can_last_send_success);
 			
         // Required: clear error interrupt pending
         CAN1->MSR = CAN_MSR_ERRI;

@@ -45,7 +45,6 @@
 
 // General utilities
 volatile uint64_t sys_timer = 0;
-uint64_t time_now = 0;
 
 // Frequency calculation
 volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX] = {{0}, {0}, {0}, {0}};
@@ -71,11 +70,11 @@ SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX] = {
 };
 
 // MCP23008
-uint64_t mcp23_last_check_time = 0;
 uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_result_output, mcp23_check_result_input, mcp23_check_result_success;
+uint64_t mcp23_last_check_time = 0;
 
-uint64_t mcp_off_button_time = 0;
 uint8_t mcp_off_button_counter = 0;
+uint64_t mcp_off_button_time = 0;
 
 // CAN
 uint8_t can_last_send_success = false;
@@ -87,14 +86,16 @@ uint8_t main_ui_on = false, ui_update_required = false;
 uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 
 uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = false, can_procedure_in_progress = false, main_functionality_active = false;
+uint64_t main_logic_last_tick_time = 0;
 
 uint32_t user_params_array[USER_PARAMS_COUNT] = {0};
 float current_user_area_total = 0, current_user_area_session = 0;
 
-uint8_t current_state_seeder_up = false;
+uint8_t current_state_seeder_up = false, current_state_bunker_full = false;
 float current_can_motor_speed = 0, current_actual_motor_speed = 0, current_fan_speed = 0, current_seeder_speed = 0, current_quota = 0;
 
-uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}, {0}};
+uint8_t error_notification_beep_counter[ERROR_COUNT_TOTAL] = {0};
+uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}};
 uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start_end[ERROR_COUNT_TOTAL] = {0};
 
 // Resources
@@ -168,24 +169,23 @@ static void MX_TIM4_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void setUserParameter(uint8_t pos, uint32_t parameter)
-{
-	user_params_array[pos] = parameter;
-}
 
-uint32_t getUserParameter(uint8_t pos)
+void updateErrorState(uint8_t state_pos, uint8_t error_pos, uint8_t value)
 {
-	return user_params_array[pos];
-}
-
-uint8_t checkIfAllUserParamsAreSet()
-{
-	uint32_t check_sum = 0;
-	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
+	if (state_pos >= ERROR_STATE_ARRAY_COUNT || error_pos >= ERROR_COUNT_TOTAL) return;
+	
+	if (value && !error_state_array[state_pos][error_pos])
 	{
-		check_sum |= (user_params_array[i] == 0) << i;
+		switch(state_pos)
+		{
+			case ERROR_STATE_PREACTIVE: case ERROR_STATE_ACTIVE:
+				error_last_activated[error_pos] = sys_timer; break;
+			case ERROR_NOTIFICATION_IN_PROGRESS: case ERROR_NOTIFICATION_COMPLETE:
+				error_notification_start_end[error_pos] = sys_timer; error_notification_beep_counter[error_pos] = 0; break;
+		}
 	}
-	return (check_sum == 0);
+	
+	error_state_array[state_pos][error_pos] = value;
 }
 
 
@@ -383,23 +383,85 @@ int main(void)
 				}
 			}
 			
-			SENSADDR_GPIO_TypeDef* seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER];
-			current_state_seeder_up = LL_GPIO_IsInputPinSet(seeder_sensor_addr->port, seeder_sensor_addr->pin_mask);
-			
-			if (checkIfAllUserParamsAreSet())
+			if (sys_timer - main_logic_last_tick_time >= MAIN_LOGIC_TICK_TIME)
 			{
-				// TODO: perform sensor value out-of-range checks
-				// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
+				main_logic_last_tick_time = sys_timer;
+				
+				SENSADDR_GPIO_TypeDef *seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER], *bunker_sensor_addr = sensor_address_gpio[SENSADDR_POS_BUNKER];
+				current_state_seeder_up = LL_GPIO_IsInputPinSet(seeder_sensor_addr->port, seeder_sensor_addr->pin_mask);
+				current_state_bunker_full = LL_GPIO_IsInputPinSet(bunker_sensor_addr->port, bunker_sensor_addr->pin_mask);
+				
+				float prev_seeder_speed = current_seeder_speed;
+				
+				current_fan_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
+				current_seeder_speed = calculateSeederSpeed_fromSensorOutput(getUserParameter(USER_PARAM_WHEEL_DIAMETER), getUserParameter(USER_PARAM_WHEEL_PULSES), sensor_frequency[SENSADDR_POS_SPEED]);
+				if (current_state_seeder_up) {
+					current_actual_motor_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
+					current_quota = calculateQuota_fromSpeed(getUserParameter(USER_PARAM_SEEDER_WIDTH), current_seeder_speed, getUserParameter(USER_PARAM_MASS_PER_TURN), current_actual_motor_speed);
+				}
+				else
+				{
+					current_actual_motor_speed = 0;
+					current_quota = 0;
+				}
+				
+				// Main logic (if the setup was completed)
+				if (checkIfAllUserParamsAreSet())
+				{
+					updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_EMPTY, !current_state_bunker_full);
+					
+					uint8_t fan_speed_check_ok = (current_fan_speed <= getUserParameter(USER_PARAM_FAN_SPEED_MAX) && current_fan_speed >= getUserParameter(USER_PARAM_FAN_SPEED_MIN));
+					updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_FAN, !fan_speed_check_ok);
+					
+					if (current_state_seeder_up && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+					{
+						float low_border, high_border;
+						
+						low_border = current_can_motor_speed * (100 - SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
+						high_border = current_can_motor_speed * (100 + SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
+						uint8_t motor_speed_check_ok = (current_actual_motor_speed >= low_border && current_actual_motor_speed <= high_border);
+						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok);
+						
+						uint8_t seeder_speed_check_ok = (current_seeder_speed <= getUserParameter(USER_PARAM_SPEED_MAX) && current_seeder_speed >= getUserParameter(USER_PARAM_SPEED_MIN));
+						if (!seeder_speed_check_ok)
+						{
+							current_can_motor_speed = (current_seeder_speed > getUserParameter(USER_PARAM_SPEED_MAX)) ? MOTOR_SPEED_LIMIT_MAX : MOTOR_SPEED_LIMIT_MIN;
+						}
+						else
+						{
+							current_can_motor_speed = calculateMotorSpeed_fromSpeed(getUserParameter(USER_PARAM_QUOTA), getUserParameter(USER_PARAM_SEEDER_WIDTH), getUserParameter(USER_PARAM_MASS_PER_TURN), current_seeder_speed);
+						}
+						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_SPEED, !seeder_speed_check_ok);
+						
+						low_border = (float)getUserParameter(USER_PARAM_QUOTA) * (100 - SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
+						high_border = (float)getUserParameter(USER_PARAM_QUOTA) * (100 + SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
+						uint8_t quota_check_ok = (current_quota >= low_border && current_quota <= high_border);
+						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_QUOTA, !quota_check_ok);
+						
+						sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
+					}
+					
+					if (current_state_seeder_up)
+					{
+						float area_addition = (prev_seeder_speed + current_seeder_speed) / 2 * METERS_IN_KILOMETER / SECONDS_IN_MINUTE / MINUTES_IN_HOUR * getUserParameter(USER_PARAM_SEEDER_WIDTH) * (MAIN_LOGIC_TICK_TIME / MILLIS_IN_SECOND) / SQUARE_METERS_IN_HECTARE;
+						if (current_quota < getUserParameter(USER_PARAM_QUOTA))
+						{
+							area_addition *= current_quota / getUserParameter(USER_PARAM_QUOTA);
+						}
+						
+						current_user_area_total += area_addition;
+						current_user_area_session += area_addition;
+					}
+				}
 			}
 		}
-		else if (can_procedure_in_progress && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+		else if (can_procedure_in_progress && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 		{
 			sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
 		}
-		else if (can_should_send_test_package && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+		else if (can_should_send_test_package && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 		{
-			time_now = sys_timer;
-			if (time_now - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
+			if (sys_timer - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
 			{
 				sendCANPackage(0, MOTOR_TURN_DIRECTION);
 				can_should_send_test_package = false;
@@ -410,26 +472,19 @@ int main(void)
 			}
 		}
 		
-		time_now = sys_timer;
 		for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
 		{
-			if (time_now - sensor_last_check_time[i] >= SENSOR_VALUE_LOST_TIME)
+			if (SENSADDR_MASK_TIMS & (1 << i))
 			{
-				if (SENSADDR_MASK_TIMS & (1 << i))
+				if (sys_timer - sensor_last_check_time[i] >= SENSOR_VALUE_LOST_TIME)
 				{
-					switch(i)
-					{
-						case SENSADDR_POS_MOTOR: current_actual_motor_speed = 0; calculateQuota_fromSpeed(getUserParameter(USER_PARAM_SEEDER_WIDTH), current_seeder_speed, getUserParameter(USER_PARAM_MASS_PER_TURN), 0); break;
-						case SENSADDR_POS_SPEED: current_seeder_speed = 0; calculateQuota_fromSpeed(getUserParameter(USER_PARAM_SEEDER_WIDTH), 0, getUserParameter(USER_PARAM_MASS_PER_TURN), current_actual_motor_speed); break;
-						case SENSADDR_POS_FAN: current_fan_speed = 0;
-					}
+					sensor_frequency[i] = 0;
 				}
 			}
 		}
 		
-		
-		time_now = sys_timer;
-		if (mcp23_check_required && (time_now - mcp23_last_check_time) >= MCP23008_DEBOUNCE_WAIT_TIME)
+		// Button checking
+		if (mcp23_check_required && (sys_timer - mcp23_last_check_time) >= MCP23008_DEBOUNCE_WAIT_TIME)
 		{
 			mcp23008_matrix_check();
 			if (mcp23_check_result_success)
@@ -457,10 +512,9 @@ int main(void)
 						}
 						break;
 					case MATRIX_POS_BUTTON_POWER:
-						time_now = sys_timer;
 						if (!main_ui_on)
 						{
-							if (time_now - mcp_off_button_time >= 1 * MILLIS_IN_SECOND)
+							if (sys_timer - mcp_off_button_time >= 1 * MILLIS_IN_SECOND)
 							{
 								sequence_turnDisplayOn(true);
 								mcp_off_button_counter = 0;
@@ -468,7 +522,7 @@ int main(void)
 						}
 						else
 						{
-							if (time_now - mcp_off_button_time <= (MCP23008_BUTTON_CHECK_TIME + 25))
+							if (sys_timer - mcp_off_button_time <= (MCP23008_BUTTON_CHECK_TIME + 25))
 							{
 								mcp_off_button_counter++;
 							}
@@ -476,7 +530,7 @@ int main(void)
 							{
 								mcp_off_button_counter = 0;
 							}
-							mcp_off_button_time = time_now;
+							mcp_off_button_time = sys_timer;
 							
 							if (mcp_off_button_counter >= 10)
 							{
@@ -495,16 +549,15 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		if (!mcp23_check_allowed)
 		{
-			time_now = sys_timer;
-			if ((time_now - mcp23_last_check_time) >= MCP23008_BUTTON_CHECK_TIME)
+			if ((sys_timer - mcp23_last_check_time) >= MCP23008_BUTTON_CHECK_TIME)
 			{
 				mcp23_check_allowed = true;
 				mcp23008_read_register(MCP23008_REG_GPIO);
 			}
 		}
 		
-		time_now = sys_timer;
-		if ( (ui_last_update_time - time_now) >= (1000 / UI_UPDATE_MAX_FREQUENCY) && ui_update_required && main_ui_on )
+		// UI updating
+		if ( (sys_timer - ui_last_update_time) >= (1000 / UI_UPDATE_MAX_FREQUENCY) && ui_update_required && main_ui_on )
 		{
 			display_buildUIScreen(&main_screen);
 			ui_update_required = false;

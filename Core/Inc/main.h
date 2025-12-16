@@ -151,9 +151,6 @@ extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
 #define SENSADDR_MASK_TIMS ((1 << SENSADDR_POS_FAN) + (1 << SENSADDR_POS_MOTOR) + (1 << SENSADDR_POS_SPEED))
 #define SENSADDR_MASK_GPIOS ((1 << SENSADDR_POS_SEEDER) + (1 << SENSADDR_POS_BUNKER))
 
-#define SENSOR_VALUE_MIN_RANGE_FAN 20
-#define SENSOR_VALUE_LOST_TIME 3000
-
 extern SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX];
 extern SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX];
 extern uint64_t sensor_last_check_time[SENSOR_COUNT_MAX];
@@ -190,8 +187,8 @@ extern float sensor_frequency[SENSOR_COUNT_MAX];
 #define MCP23008_BUTTON_ROW_COUNT 3
 #define MCP23008_PINS_SETUP 0x70
 
-extern uint64_t mcp23_last_check_time;
 extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_output, mcp23_check_result_input, mcp23_check_result_success;
+extern uint64_t mcp23_last_check_time;
 
 
 #define MATRIX_POS_BUTTON_UP 00
@@ -212,8 +209,8 @@ extern uint64_t can_last_send_time, can_test_initialization_time;
 #define UI_MAIN_COLOR_INVERTED 1
 
 extern UI_Screen main_screen;
-extern uint64_t ui_last_update_time, ui_last_callback_time;
 extern uint8_t ui_update_required, main_ui_on, switch_to_start_menu_allowed;
+extern uint64_t ui_last_update_time, ui_last_callback_time;
 
 
 #define MOTOR_CAN_ID 0x16000001
@@ -222,7 +219,15 @@ extern uint8_t ui_update_required, main_ui_on, switch_to_start_menu_allowed;
 #define MOTOR_DEFAULT_SPEED_EMPTY 30
 #define MOTOR_TURN_DIRECTION 0x00
 
+#define SENSOR_VALUE_MIN_RANGE_FAN 20
+#define SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION 10
+#define SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION 3
+
+#define SENSOR_VALUE_LOST_TIME 1500
+#define MAIN_LOGIC_TICK_TIME 10
+
 extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
+extern uint64_t main_logic_last_tick_time;
 
 
 #define USER_PARAMS_COUNT 9
@@ -241,13 +246,10 @@ extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_fun
 
 #define USER_DATA_AREA_SAVE_PRECISION 1 // 1 digit after comma
 
+extern uint32_t user_params_array[USER_PARAMS_COUNT];
 extern float current_user_area_total, current_user_area_session;
 
-void setUserParameter(uint8_t pos, uint32_t parameter);
-uint32_t getUserParameter(uint8_t pos);
-uint8_t checkIfAllUserParamsAreSet(void);
-
-extern uint8_t current_state_seeder_up;
+extern uint8_t current_state_seeder_up, current_state_bunker_full;
 extern float current_can_motor_speed, current_actual_motor_speed, current_fan_speed, current_seeder_speed, current_quota;
 
 
@@ -268,15 +270,17 @@ extern float current_can_motor_speed, current_actual_motor_speed, current_fan_sp
 #define ERROR_NOTIFICATION_BEEP_TIME 200
 #define ERROR_NOTIFICATION_BEEP_COUNT 4
 
-#define ERROR_STATE_ARRAY_COUNT 5
+#define ERROR_STATE_ARRAY_COUNT 4
 #define ERROR_STATE_PREACTIVE 0
 #define ERROR_STATE_ACTIVE 1
 #define ERROR_NOTIFICATION_COMPLETE 2
 #define ERROR_NOTIFICATION_IN_PROGRESS 3
-#define ERROR_NOTIFICATION_BEEP_COUNTER 4
 
+extern uint8_t error_notification_beep_counter[ERROR_COUNT_TOTAL];
 extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
 extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start_end[ERROR_COUNT_TOTAL];
+
+void updateErrorState(uint8_t state_pos, uint8_t error_pos, uint8_t value);
 
 // Resources
 #define LOGO_ERROR_ALERT_SIZE 20

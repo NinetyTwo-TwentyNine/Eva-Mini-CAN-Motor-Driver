@@ -2,6 +2,31 @@
 
 
 // ======================
+// Parameter management
+// ======================
+
+void setUserParameter(uint8_t pos, uint32_t parameter)
+{
+	user_params_array[pos] = parameter;
+}
+
+uint32_t getUserParameter(uint8_t pos)
+{
+	return user_params_array[pos];
+}
+
+uint8_t checkIfAllUserParamsAreSet()
+{
+	uint32_t check_sum = 0;
+	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
+	{
+		check_sum |= (user_params_array[i] == 0) << i;
+	}
+	return (check_sum == 0);
+}
+
+
+// ======================
 // Parameter calculation
 // ======================
 
@@ -10,6 +35,15 @@ uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder
 	if (seeder_speed_kmh != 0 && seeder_width_m != 0 && area_divider != 0)
 	{
 		return round( (float)SQUARE_METERS_IN_HECTARE / (float)area_divider / ((float)seeder_speed_kmh * METERS_IN_KILOMETER / SECONDS_IN_MINUTE / MINUTES_IN_HOUR * (float)seeder_width_m) * MILLIS_IN_SECOND );
+	}
+	return 0;
+}
+
+float calculateSeederSpeed_fromSensorOutput(uint32_t wheel_diameter_dm, uint32_t wheel_pulses_count, float sensor_frequency_hz)
+{
+	if (wheel_pulses_count != 0)
+	{
+		return (float)wheel_diameter_dm / DECIMETERS_IN_METER * sensor_frequency_hz / wheel_pulses_count * SECONDS_IN_MINUTE * MINUTES_IN_HOUR / METERS_IN_KILOMETER;
 	}
 	return 0;
 }
@@ -23,11 +57,11 @@ float calculateMotorSpeed_fromTime(uint32_t quota_kg_per_ha, uint8_t area_divide
 	return 0;
 }
 
-float calculateMotorSpeed_fromSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g, uint32_t seeder_speed_kmh)
+float calculateMotorSpeed_fromSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g, float seeder_speed_kmh)
 {
 	if (mass_per_turn_g != 0)
 	{
-		return ( ((float)quota_kg_per_ha * GRAMS_IN_KILOGRAM / SQUARE_METERS_IN_HECTARE) * ((float)seeder_speed_kmh * METERS_IN_KILOMETER / MINUTES_IN_HOUR / SECONDS_IN_MINUTE) * (float)seeder_width_m / (float)mass_per_turn_g * SECONDS_IN_MINUTE );
+		return ( ((float)quota_kg_per_ha * GRAMS_IN_KILOGRAM / SQUARE_METERS_IN_HECTARE) * (seeder_speed_kmh * METERS_IN_KILOMETER / MINUTES_IN_HOUR / SECONDS_IN_MINUTE) * (float)seeder_width_m / (float)mass_per_turn_g * SECONDS_IN_MINUTE );
 	}
 	return 0;
 }
