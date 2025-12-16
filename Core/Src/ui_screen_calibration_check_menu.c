@@ -200,34 +200,26 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 		counted_mass_val = round( (float)mass_per_turn_val * (current_can_motor_speed * (float)total_motor_movement_time / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
 		CCMHelper_ConvertValToText(screen, CCM_POS_COUNTED_MASS_VAL);
 		
+		uint32_t time_left = (initial_time_total > total_motor_movement_time) ? (initial_time_total - total_motor_movement_time) : 0;
 		if (total_motor_movement_time % 1000 == 0)
 		{
 			if (time_sec_val != 0 || time_min_val != 0 || time_hour_val != 0)
 			{
-				if (time_sec_val == 0)
-				{
-					time_sec_val = 59;
-					if (time_min_val == 0)
-					{
-						time_min_val = 59;
-						time_hour_val -= 1;
-					}
-					else
-					{
-						time_min_val -= 1;
-					}
-				}
-				else
-				{
-					time_sec_val -= 1;
-				}
+				uint32_t time_copy = time_left / MILLIS_IN_SECOND;
+				
+				time_hour_val = time_copy / SECONDS_IN_MINUTE / MINUTES_IN_HOUR;
+				time_copy -= time_hour_val * SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
+				
+				time_min_val = time_copy / SECONDS_IN_MINUTE;
+				time_copy -= time_min_val * SECONDS_IN_MINUTE;
+				
+				time_sec_val = time_copy;
 			}
 			CCMHelper_ConvertValToText(screen, CCM_POS_TIME_HOUR_VAL);
 			CCMHelper_ConvertValToText(screen, CCM_POS_TIME_MIN_VAL);
 			CCMHelper_ConvertValToText(screen, CCM_POS_TIME_SEC_VAL);
 		}
 		
-		uint32_t time_left = (initial_time_total > total_motor_movement_time) ? (initial_time_total - total_motor_movement_time) : 0;
 		if (time_left == 0)
 		{
 			can_procedure_in_progress = false;
@@ -371,7 +363,6 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				}
 				case apply_id:
 				{
-					// TODO: save to FLASH memory
 					setUserParameter(USER_PARAM_MASS_PER_TURN, new_mass_val);
 					
 					uint32_t user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameter(USER_PARAM_QUOTA);

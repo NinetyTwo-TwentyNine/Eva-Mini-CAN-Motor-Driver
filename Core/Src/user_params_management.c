@@ -79,12 +79,12 @@ uint32_t calculateMaxMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_
 // Parameter storing
 // ======================
 
-void save_user_params_batch(void)
+void save_user_params_batch()
 {
 	uint32_t flg_pos = (USER_DATA_SAVE_SIZE/2 - 1); // Flag pos in half-words (the last position in the data save)
 	
+	uint32_t begin_addr;
 	uint8_t count = 1024/USER_DATA_SAVE_SIZE;
-	uint32_t begin_addr = USER_DATA_SAVE_PAGE_ADDR;
 	for (uint8_t i = 0; i < count; i++)
 	{
 		begin_addr = USER_DATA_SAVE_PAGE_ADDR + i * USER_DATA_SAVE_SIZE;
@@ -97,10 +97,12 @@ void save_user_params_batch(void)
 		
 		if (i == count - 1)
 		{
-			flash_erase_page(USER_DATA_SAVE_PAGE_ADDR);
+			if (!flash_erase_page(USER_DATA_SAVE_PAGE_ADDR)) return; // abort if erase fails
 			begin_addr = USER_DATA_SAVE_PAGE_ADDR;
 		}
 	}
+	
+	flash_save16(begin_addr + flg_pos * 2, 0x0000);
 	
 	for (uint8_t j = 0; j < USER_PARAMS_COUNT; j++)
 	{
@@ -118,35 +120,28 @@ void save_user_params_batch(void)
 	flash_save32(begin_addr, total_area);
 	begin_addr += 4;
 	flash_save32(begin_addr, session_area);
-	begin_addr += 4;
-			
-	flash_save16(begin_addr, 1);
 	
 	return;
 }
 
-void restore_user_params_batch(void)
+void restore_user_params_batch()
 {
 	uint32_t flg_pos = (USER_DATA_SAVE_SIZE/2 - 1); // Flag pos in half-words (the last position in the data save)
 	
+	uint32_t begin_addr;
 	uint8_t count = 1024/USER_DATA_SAVE_SIZE;
-	uint32_t begin_addr = USER_DATA_SAVE_PAGE_ADDR + (count - 1) * USER_DATA_SAVE_SIZE;
-	for (uint8_t i = 0; i < count; i++)
+	for (uint8_t i = count - 1; i <= count - 1; i--)
 	{
 	  begin_addr = USER_DATA_SAVE_PAGE_ADDR + i * USER_DATA_SAVE_SIZE;
 		uint16_t save_flg = flash_read16(begin_addr + flg_pos * 2);
-		if (save_flg == 0xFFFF)
+		if (save_flg != 0xFFFF)
 		{
-			if (i == 0)
-			{
-				return; // Completely empty page
-			}
-			else
-			{
-				begin_addr = USER_DATA_SAVE_PAGE_ADDR + (i - 1) * USER_DATA_SAVE_SIZE;
-			}
-			
 			break;
+		}
+		
+		if (i == 0)
+		{
+			return;
 		}
 	}
 	

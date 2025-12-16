@@ -176,13 +176,11 @@ static void SpeedSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 				{
 					case diameter_item_id:
 					{
-						// TODO: Handle wheel diameter value being saved to FLASH memory
 						setUserParameter(USER_PARAM_WHEEL_DIAMETER, diameter_val);
 						break;
 					}
 					case pulses_item_id:
 					{
-						// TODO: Handle sensor pulses value being saved to FLASH memory
 						setUserParameter(USER_PARAM_WHEEL_PULSES, pulses_val);
 						break;
 					}

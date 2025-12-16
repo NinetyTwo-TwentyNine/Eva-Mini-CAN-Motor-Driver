@@ -403,7 +403,6 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 				{
 					case width_item_id: case quota_item_id:
 					{
-						// TODO: Handle width and quota being saved to FLASH memory
 						if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH) || quota_val != getUserParameter(USER_PARAM_QUOTA))
 						{
 							setUserParameter(USER_PARAM_MASS_PER_TURN, 0);

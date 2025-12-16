@@ -151,6 +151,9 @@ extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
 #define SENSADDR_MASK_TIMS ((1 << SENSADDR_POS_FAN) + (1 << SENSADDR_POS_MOTOR) + (1 << SENSADDR_POS_SPEED))
 #define SENSADDR_MASK_GPIOS ((1 << SENSADDR_POS_SEEDER) + (1 << SENSADDR_POS_BUNKER))
 
+#define SENSOR_VALUE_MIN_RANGE_FAN 20
+#define SENSOR_VALUE_LOST_TIME 3000
+
 extern SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX];
 extern SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX];
 extern uint64_t sensor_last_check_time[SENSOR_COUNT_MAX];
@@ -181,13 +184,13 @@ extern float sensor_frequency[SENSOR_COUNT_MAX];
 // MCP23008
 #define MCP23008_ADDR 0x27
 #define MCP23008_I2C I2C2
-#define MCP23008_BUTTON_CHECK_TIME 160
+#define MCP23008_BUTTON_CHECK_TIME 175
 #define MCP23008_DEBOUNCE_WAIT_TIME 20
 
 #define MCP23008_BUTTON_ROW_COUNT 3
 #define MCP23008_PINS_SETUP 0x70
 
-extern uint64_t mcp23_check_last_time;
+extern uint64_t mcp23_last_check_time;
 extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_output, mcp23_check_result_input, mcp23_check_result_success;
 
 
@@ -216,9 +219,8 @@ extern uint8_t ui_update_required, main_ui_on, switch_to_start_menu_allowed;
 #define MOTOR_CAN_ID 0x16000001
 #define MOTOR_SPEED_LIMIT_MIN 0
 #define MOTOR_SPEED_LIMIT_MAX 200
-#define MOTOR_DEFAULT_SPEED_EMPTY 30 // Just enough for one transmission to make a spin
-
-#define SENSOR_VALUE_RANGE_FAN 20
+#define MOTOR_DEFAULT_SPEED_EMPTY 30
+#define MOTOR_TURN_DIRECTION 0x00
 
 extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
 
@@ -234,8 +236,8 @@ extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_fun
 #define USER_PARAM_QUOTA 7
 #define USER_PARAM_MASS_PER_TURN 8
 
-#define USER_DATA_SAVE_PAGE_ADDR 0x0800F800
-#define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 2)*4 + 2)
+#define USER_DATA_SAVE_PAGE_ADDR 0x0800FC00
+#define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 3)*4)
 
 #define USER_DATA_AREA_SAVE_PRECISION 1 // 1 digit after comma
 

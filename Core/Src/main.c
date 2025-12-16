@@ -71,8 +71,11 @@ SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX] = {
 };
 
 // MCP23008
-uint64_t mcp23_check_last_time = 0;
+uint64_t mcp23_last_check_time = 0;
 uint8_t mcp23_check_required = false, mcp23_check_allowed = false, mcp23_check_result_output, mcp23_check_result_input, mcp23_check_result_success;
+
+uint64_t mcp_off_button_time = 0;
+uint8_t mcp_off_button_counter = 0;
 
 // CAN
 uint8_t can_last_send_success = false;
@@ -85,7 +88,6 @@ uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 
 uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = false, can_procedure_in_progress = false, main_functionality_active = false;
 
-// TODO: Extract all of these from FLASH memory
 uint32_t user_params_array[USER_PARAMS_COUNT] = {0};
 float current_user_area_total = 0, current_user_area_session = 0;
 
@@ -347,20 +349,22 @@ int main(void)
 	mcp23008_write_register(MCP23008_REG_DEFVAL, MCP23008_PINS_SETUP);
 	
 	LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-	LL_mDelay(60);
+	LL_mDelay(100);
 	LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
-	LL_mDelay(60);
+	LL_mDelay(100);
 	LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-	LL_mDelay(60);
+	LL_mDelay(100);
 	LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
-	LL_mDelay(60);
+	LL_mDelay(100);
 	LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-	LL_mDelay(60);
+	LL_mDelay(100);
 	LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
 	
 	mcp23008_read_register(MCP23008_REG_GPIO);
 	NVIC_SetPriority(EXTI2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),10, 0));
 	NVIC_EnableIRQ(EXTI2_IRQn);
+	
+	restore_user_params_batch();
 	
   /* USER CODE END 2 */
 
@@ -375,38 +379,57 @@ int main(void)
 				if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
 				{
 					sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
-					time_now = sys_timer;
-					sensor_last_check_time[sensor_num] = time_now;
-					// TODO: perform sensor value out-of-range checks
+					sensor_last_check_time[sensor_num] = sys_timer;
 				}
 			}
 			
+			SENSADDR_GPIO_TypeDef* seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER];
+			current_state_seeder_up = LL_GPIO_IsInputPinSet(seeder_sensor_addr->port, seeder_sensor_addr->pin_mask);
+			
 			if (checkIfAllUserParamsAreSet())
 			{
+				// TODO: perform sensor value out-of-range checks
 				// TODO: calculate motor speed, deoendent on sensor output and send CAN-transmissions
 			}
 		}
 		else if (can_procedure_in_progress && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 		{
-			sendCANPackage(current_can_motor_speed, 0);
+			sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
 		}
 		else if (can_should_send_test_package && (time_now - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 		{
 			time_now = sys_timer;
 			if (time_now - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
 			{
-				sendCANPackage(0, 0);
+				sendCANPackage(0, MOTOR_TURN_DIRECTION);
 				can_should_send_test_package = false;
 			}
 			else
 			{
-				sendCANPackage(MOTOR_DEFAULT_SPEED_EMPTY, 0);
+				sendCANPackage(MOTOR_DEFAULT_SPEED_EMPTY, MOTOR_TURN_DIRECTION);
+			}
+		}
+		
+		time_now = sys_timer;
+		for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
+		{
+			if (time_now - sensor_last_check_time[i] >= SENSOR_VALUE_LOST_TIME)
+			{
+				if (SENSADDR_MASK_TIMS & (1 << i))
+				{
+					switch(i)
+					{
+						case SENSADDR_POS_MOTOR: current_actual_motor_speed = 0; calculateQuota_fromSpeed(getUserParameter(USER_PARAM_SEEDER_WIDTH), current_seeder_speed, getUserParameter(USER_PARAM_MASS_PER_TURN), 0); break;
+						case SENSADDR_POS_SPEED: current_seeder_speed = 0; calculateQuota_fromSpeed(getUserParameter(USER_PARAM_SEEDER_WIDTH), 0, getUserParameter(USER_PARAM_MASS_PER_TURN), current_actual_motor_speed); break;
+						case SENSADDR_POS_FAN: current_fan_speed = 0;
+					}
+				}
 			}
 		}
 		
 		
 		time_now = sys_timer;
-		if (mcp23_check_required && (time_now - mcp23_check_last_time) >= MCP23008_DEBOUNCE_WAIT_TIME)
+		if (mcp23_check_required && (time_now - mcp23_last_check_time) >= MCP23008_DEBOUNCE_WAIT_TIME)
 		{
 			mcp23008_matrix_check();
 			if (mcp23_check_result_success)
@@ -434,7 +457,35 @@ int main(void)
 						}
 						break;
 					case MATRIX_POS_BUTTON_POWER:
-						sequence_turnDisplayOn(!main_ui_on);
+						time_now = sys_timer;
+						if (!main_ui_on)
+						{
+							if (time_now - mcp_off_button_time >= 1 * MILLIS_IN_SECOND)
+							{
+								sequence_turnDisplayOn(true);
+								mcp_off_button_counter = 0;
+							}
+						}
+						else
+						{
+							if (time_now - mcp_off_button_time <= (MCP23008_BUTTON_CHECK_TIME + 25))
+							{
+								mcp_off_button_counter++;
+							}
+							else
+							{
+								mcp_off_button_counter = 0;
+							}
+							mcp_off_button_time = time_now;
+							
+							if (mcp_off_button_counter >= 10)
+							{
+								save_user_params_batch();
+								sequence_turnDisplayOn(false);
+								mcp_off_button_counter = 0;
+							}
+						}
+						break;
 				}
 			}
 		}
@@ -445,7 +496,7 @@ int main(void)
 		if (!mcp23_check_allowed)
 		{
 			time_now = sys_timer;
-			if ((time_now - mcp23_check_last_time) >= MCP23008_BUTTON_CHECK_TIME)
+			if ((time_now - mcp23_last_check_time) >= MCP23008_BUTTON_CHECK_TIME)
 			{
 				mcp23_check_allowed = true;
 				mcp23008_read_register(MCP23008_REG_GPIO);

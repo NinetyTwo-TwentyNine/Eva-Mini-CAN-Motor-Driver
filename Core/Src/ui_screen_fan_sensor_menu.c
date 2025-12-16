@@ -113,11 +113,11 @@ static void FanSensorMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press
 				
 				if (val_pos == FSM_POS_SENSOR_MIN_VAL)
 				{
-					max_val -= SENSOR_VALUE_RANGE_FAN;
+					max_val -= SENSOR_VALUE_MIN_RANGE_FAN;
 				}
 				else if (val_pos == FSM_POS_SENSOR_MAX_VAL)
 				{
-					min_val += SENSOR_VALUE_RANGE_FAN;
+					min_val += SENSOR_VALUE_MIN_RANGE_FAN;
 				}
 				utils_edit_value_by_slot_with_min_max(val_ptr, selected_slot, sensor_val_allowed_length, press_type, min_val, max_val);
 				FSMHelper_UpdateValStr_SlotBlink(screen, false);
@@ -190,10 +190,9 @@ static void FanSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element_P
 				{
 					case min_item_id:
 					{
-						// TODO: Handle min/max sensor value being saved to FLASH memory
-						if (min_sensor_val + SENSOR_VALUE_RANGE_FAN > max_sensor_val)
+						if (min_sensor_val + SENSOR_VALUE_MIN_RANGE_FAN > max_sensor_val)
 						{
-							max_sensor_val = min_sensor_val + SENSOR_VALUE_RANGE_FAN;
+							max_sensor_val = min_sensor_val + SENSOR_VALUE_MIN_RANGE_FAN;
 							FSMHelper_ConvertValToText(screen, FSM_POS_SENSOR_MAX_VAL);
 						}
 						setUserParameter(USER_PARAM_FAN_SPEED_MIN, min_sensor_val);
@@ -202,10 +201,9 @@ static void FanSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element_P
 					}
 					case max_item_id:
 					{
-						// TODO: Handle min/max sensor value being saved to FLASH memory
-						if (max_sensor_val - SENSOR_VALUE_RANGE_FAN < min_sensor_val)
+						if (max_sensor_val - SENSOR_VALUE_MIN_RANGE_FAN < min_sensor_val)
 						{
-							min_sensor_val = max_sensor_val - SENSOR_VALUE_RANGE_FAN;
+							min_sensor_val = max_sensor_val - SENSOR_VALUE_MIN_RANGE_FAN;
 							FSMHelper_ConvertValToText(screen, FSM_POS_SENSOR_MIN_VAL);
 						}
 						setUserParameter(USER_PARAM_FAN_SPEED_MIN, min_sensor_val);

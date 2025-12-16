@@ -460,7 +460,7 @@ void EXTI2_IRQHandler(void)
 		{	
 			mcp23_check_allowed = false;
 			mcp23_check_required = true;
-			mcp23_check_last_time = sys_timer;
+			mcp23_last_check_time = sys_timer;
 			//NVIC_DisableIRQ(EXTI2_IRQn);
 		}
     /* USER CODE END LL_EXTI_LINE_2 */
