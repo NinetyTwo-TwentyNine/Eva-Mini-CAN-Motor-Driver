@@ -269,6 +269,5 @@ void UI_BuildSpeedSensorMenu(UI_Screen* screen)
 	screen->general_callback = SpeedSensorMenu_ScreenCallback;
 	screen->callback_interval = 50;
 	
-	//main_functionality_active = true;
-	switch_to_start_menu_allowed = true;
+	setCurrentLogicState(LSTATE_NONE);
 }

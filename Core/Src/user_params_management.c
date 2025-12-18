@@ -7,6 +7,10 @@
 
 void setUserParameter(uint8_t pos, uint32_t parameter)
 {
+	if (user_params_array[pos] != parameter)
+	{
+		user_params_differentiate = true;
+	}
 	user_params_array[pos] = parameter;
 }
 
@@ -20,6 +24,7 @@ uint8_t checkIfAllUserParamsAreSet()
 	uint32_t check_sum = 0;
 	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
 	{
+		if (i == USER_PARAM_FAN_SPEED_MIN || i == USER_PARAM_FAN_SPEED_MIN) continue; // allow minimums to be zero
 		check_sum |= (user_params_array[i] == 0) << i;
 	}
 	return (check_sum == 0);
@@ -30,6 +35,31 @@ uint8_t checkIfAllUserParamsAreSet()
 // Parameter calculation
 // ======================
 
+float equate_kg_per_ha_and_g_per_sq_m(float input, uint8_t from_kg_per_ha)
+{
+	if (from_kg_per_ha)
+	{
+		return ( input * GRAMS_IN_KILOGRAM / SQUARE_METERS_IN_HECTARE );
+	}
+	else
+	{
+		return ( input * SQUARE_METERS_IN_HECTARE / GRAMS_IN_KILOGRAM );
+	}
+}
+
+float equate_km_per_h_and_m_per_s(float input, uint8_t from_km_per_h)
+{
+	if (from_km_per_h)
+	{
+		return ( input * METERS_IN_KILOMETER / MINUTES_IN_HOUR / SECONDS_IN_MINUTE );
+	}
+	else
+	{
+		return ( input * SECONDS_IN_MINUTE * MINUTES_IN_HOUR / METERS_IN_KILOMETER );
+	}
+}
+
+
 uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder_width_m, uint8_t area_divider)
 {
 	if (seeder_speed_kmh != 0 && seeder_width_m != 0 && area_divider != 0)
@@ -39,11 +69,11 @@ uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder
 	return 0;
 }
 
-float calculateSeederSpeed_fromSensorOutput(uint32_t wheel_diameter_dm, uint32_t wheel_pulses_count, float sensor_frequency_hz)
+float calculateSeederSpeed_fromSensorOutput(uint32_t wheel_diameter_dm, uint32_t pulses_per_wheel_count, float sensor_frequency_hz)
 {
-	if (wheel_pulses_count != 0)
+	if (pulses_per_wheel_count != 0)
 	{
-		return (float)wheel_diameter_dm / DECIMETERS_IN_METER * sensor_frequency_hz / wheel_pulses_count * SECONDS_IN_MINUTE * MINUTES_IN_HOUR / METERS_IN_KILOMETER;
+		return equate_km_per_h_and_m_per_s( (float)wheel_diameter_dm / DECIMETERS_IN_METER * sensor_frequency_hz / pulses_per_wheel_count, false );
 	}
 	return 0;
 }
@@ -52,7 +82,7 @@ float calculateMotorSpeed_fromTime(uint32_t quota_kg_per_ha, uint8_t area_divide
 {
 	if (time_total_millis != 0 && mass_per_turn_g != 0 && area_divider != 0)
 	{
-		return ( (float)quota_kg_per_ha / (float)area_divider * GRAMS_IN_KILOGRAM / (float)mass_per_turn_g / ((float)time_total_millis / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
+		return ( (float)quota_kg_per_ha / (float)area_divider * GRAMS_IN_KILOGRAM / (float)mass_per_turn_g / ((float)time_total_millis / MILLIS_IN_SECOND / SECONDS_IN_MINUTE) );
 	}
 	return 0;
 }
@@ -61,18 +91,23 @@ float calculateMotorSpeed_fromSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_wi
 {
 	if (mass_per_turn_g != 0)
 	{
-		return ( ((float)quota_kg_per_ha * GRAMS_IN_KILOGRAM / SQUARE_METERS_IN_HECTARE) * (seeder_speed_kmh * METERS_IN_KILOMETER / MINUTES_IN_HOUR / SECONDS_IN_MINUTE) * (float)seeder_width_m / (float)mass_per_turn_g * SECONDS_IN_MINUTE );
+		return ( equate_kg_per_ha_and_g_per_sq_m(quota_kg_per_ha, true) * equate_km_per_h_and_m_per_s(seeder_speed_kmh, true) * (float)seeder_width_m * SECONDS_IN_MINUTE / (float)mass_per_turn_g );
 	}
 	return 0;
 }
 
-float calculateQuota_fromSpeed(uint32_t seeder_width_m, float seeder_speed_kmh, uint32_t mass_per_turn_g, float motor_speed)
+float calculateQuota_fromSpeed(uint32_t seeder_width_m, float seeder_speed_kmh, uint32_t mass_per_turn_g, float motor_speed_turns_per_min)
 {
 	if (seeder_speed_kmh != 0 && seeder_width_m != 0)
 	{
-		return ( (float)mass_per_turn_g * motor_speed / (seeder_speed_kmh * METERS_IN_KILOMETER / MINUTES_IN_HOUR) * SQUARE_METERS_IN_HECTARE / (float)seeder_width_m / GRAMS_IN_KILOGRAM );
+		return ( equate_kg_per_ha_and_g_per_sq_m((float)mass_per_turn_g * motor_speed_turns_per_min / (seeder_speed_kmh * METERS_IN_KILOMETER / MINUTES_IN_HOUR) / (float)seeder_width_m, false) );
 	}
 	return 0;
+}
+
+float calculateAreaAddition_fromSpeed(float begin_speed_kmh, float end_speed_kmh, uint32_t time_millis, uint32_t seeder_width_m)
+{
+	return ( equate_km_per_h_and_m_per_s((begin_speed_kmh + end_speed_kmh) / 2, true) * (float)seeder_width_m * ((float)MAIN_LOGIC_TICK_TIME / MILLIS_IN_SECOND) / SQUARE_METERS_IN_HECTARE );
 }
 
 
@@ -145,7 +180,7 @@ void save_user_params_batch()
 	begin_addr += USER_PARAMS_COUNT * 4;
 			
 	uint32_t area_scaler = 1;
-	for (uint8_t j = 0; j < USER_DATA_AREA_SAVE_PRECISION; j++)
+	for (uint8_t j = 0; j < USER_DATA_SAVE_AREA_PRECISION; j++)
 	{
 		area_scaler *= 10;
 	}
@@ -154,6 +189,9 @@ void save_user_params_batch()
 	flash_save32(begin_addr, total_area);
 	begin_addr += 4;
 	flash_save32(begin_addr, session_area);
+	
+	user_params_differentiate = false;
+	user_params_last_save_time = sys_timer;
 	
 	return;
 }
@@ -186,7 +224,7 @@ void restore_user_params_batch()
 	begin_addr += USER_PARAMS_COUNT * 4;
 	
 	uint32_t area_scaler = 1;
-	for (uint8_t j = 0; j < USER_DATA_AREA_SAVE_PRECISION; j++)
+	for (uint8_t j = 0; j < USER_DATA_SAVE_AREA_PRECISION; j++)
 	{
 		area_scaler *= 10;
 	}
@@ -196,6 +234,9 @@ void restore_user_params_batch()
 	begin_addr += 4;
 	uint32_t session_area = flash_read32(begin_addr);
 	current_user_area_session = (float)session_area / (float)area_scaler;
+	
+	user_params_differentiate = false;
+	user_params_last_save_time = sys_timer;
 	
 	return;
 }

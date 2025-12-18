@@ -91,9 +91,9 @@ static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 static void MainMenu_ScreenCallback(UI_Screen* screen)
 {
 	quota_val = round(current_quota);
-	fan_speed_val = round(current_fan_speed);
 	motor_speed_val = round(current_actual_motor_speed);
 	area_session_val = floor(current_user_area_session);
+	fan_speed_val = round(current_fan_speed);
 	
 	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
 	{
@@ -107,7 +107,7 @@ static void MainMenu_ScreenCallback(UI_Screen* screen)
 		if (!error_state_array[ERROR_STATE_ACTIVE][i]) continue;
 		
 		errors_present = 1;
-		if (error_last_activated[i] > time_comparison)
+		if (error_on_time[i] > time_comparison)
 		{
 			chosen_error = i;
 		}
@@ -146,13 +146,13 @@ static void MainMenu_ScreenCallback(UI_Screen* screen)
 	text = ui_findVisualById(screen, seeder_item_id);
 	if (bitmap != NULL && text != NULL)
 	{
-		if (current_state_seeder_up)
+		if (current_state_seeder_down)
 		{
-			ui_editText(text, "Т", 0);
+			ui_editText(text, "Р", 0);
 		}
 		else
 		{
-			ui_editText(text, "Р", 0);
+			ui_editText(text, "Т", 0);
 		}
 	}
 	
@@ -231,8 +231,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 	screen->general_callback = MainMenu_ScreenCallback;
 	screen->callback_interval = 100;
 	
-	main_functionality_active = true;
-	switch_to_start_menu_allowed = true;
+	setCurrentLogicState(LSTATE_MAIN_LOGIC);
 	
 	screen->general_callback(screen);
 	ui_last_callback_time = sys_timer;

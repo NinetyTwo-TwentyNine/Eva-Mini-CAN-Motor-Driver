@@ -315,14 +315,15 @@ void TIM4_IRQHandler(void)
 		
 		uint64_t time_now = sys_timer;
 		
+		// Error setting/resetting
 		for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
 		{
-			if (error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && !error_state_array[ERROR_STATE_ACTIVE][i])
+			if (error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activation_change[i]) > ERROR_DETERMINATION_TIME && !error_state_array[ERROR_STATE_ACTIVE][i])
 			{
 				updateErrorState(ERROR_STATE_PREACTIVE, i, false);
 				updateErrorState(ERROR_STATE_ACTIVE, i, true);
 			}
-			else if (!error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_DETERMINATION_TIME && error_state_array[ERROR_STATE_ACTIVE][i])
+			else if (!error_state_array[ERROR_STATE_PREACTIVE][i] && (time_now - error_last_activation_change[i]) > ERROR_DETERMINATION_TIME && error_state_array[ERROR_STATE_ACTIVE][i])
 			{
 				updateErrorState(ERROR_STATE_ACTIVE, i, false);
 				updateErrorState(ERROR_NOTIFICATION_COMPLETE, i, false);
@@ -333,12 +334,13 @@ void TIM4_IRQHandler(void)
 				}
 			}
 			
-			if (error_state_array[ERROR_STATE_PREACTIVE][i] && error_state_array[ERROR_STATE_ACTIVE][i] && (time_now - error_last_activated[i]) > ERROR_RESET_ALLOW_TIME)
+			if (error_state_array[ERROR_STATE_PREACTIVE][i] && error_state_array[ERROR_STATE_ACTIVE][i] && (time_now - error_last_activation_change[i]) > ERROR_RESET_ALLOW_TIME)
 			{
 				updateErrorState(ERROR_STATE_PREACTIVE, i, false); // Error source should constantly update preactive error state in order for the error to not go away after some time
 			}
 		}
 		
+		// Error notification
 		uint8_t should_start_notification = false, should_continue_notification = false, chosen_index;
 		uint64_t time_comparison = 0, notification_comparison = 0;
 		for (uint8_t i = 0; i < ERROR_COUNT_TOTAL; i++)
@@ -357,9 +359,9 @@ void TIM4_IRQHandler(void)
 			}
 			else if (error_state_array[ERROR_STATE_ACTIVE][i] && !error_state_array[ERROR_NOTIFICATION_COMPLETE][i])
 			{
-				if ((time_now - error_last_activated[i]) > time_comparison)
+				if ((time_now - error_on_time[i]) > time_comparison)
 				{
-					time_comparison = (time_now - error_last_activated[i]);
+					time_comparison = (time_now - error_on_time[i]);
 					chosen_index = i;
 					should_start_notification = true;
 				}
@@ -368,7 +370,7 @@ void TIM4_IRQHandler(void)
 		
 		if (should_start_notification)
 		{
-			if (time_now - time_comparison < ERROR_NOTIFICATION_INTERVAL_TIME)
+			if ((time_now - notification_comparison) < ERROR_NOTIFICATION_INTERVAL_TIME)
 			{
 				should_start_notification = false;
 			}
@@ -407,6 +409,12 @@ void TIM4_IRQHandler(void)
 				ui_last_callback_time = sys_timer;
 				main_screen.general_callback(&main_screen);
 			}
+		}
+		
+		// Automatic user parameter saving
+		if (user_params_differentiate && (time_now - user_params_last_save_time) >= USER_DATA_SAVE_INTERAVAL)
+		{
+			save_user_params_batch();
 		}
 	}
   /* USER CODE END TIM4_IRQn 0 */

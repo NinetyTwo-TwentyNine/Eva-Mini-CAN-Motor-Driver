@@ -22,6 +22,7 @@ static void StartMenu_OnItemPressed(UI_Screen* screen, UI_Element_Press_Type pre
 				case errors_id: UI_BuildErrorsMenu(screen); break;
 				case other_options_id: UI_BuildOptionsMenu(screen); break;
 			}
+			currently_on_start_menu = false;
 			break;
 		default: return;
 	}
@@ -63,6 +64,5 @@ void UI_BuildStartMenu(UI_Screen* screen)
   // Default hover index
 	ui_hoverNext(screen, 1);
 	
-	//main_functionality_active = true;
-	switch_to_start_menu_allowed = false;
+	currently_on_start_menu = true;
 }

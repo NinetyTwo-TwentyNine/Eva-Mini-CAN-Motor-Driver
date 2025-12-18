@@ -47,7 +47,7 @@ static uint8_t selected_slot, seconds_selected, selected_slot_gone;
 static const uint8_t seconds_selected_default = true;
 
 static uint32_t initial_time_total, total_motor_movement_time;
-static uint64_t time_save_ui_1 = 0, time_save_ui_2 = 0;
+static uint64_t time_save_ui = 0;
 static const uint16_t slot_blink_period = 400;
 
 static int16_t CMHelper_GetValPosFromItemId(uint8_t item_id);
@@ -109,7 +109,7 @@ static void CMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void CMHelper_UpdateValStr_SlotBlink(UI_Screen* screen, uint8_t slot_gone)
 {
-	time_save_ui_1 = sys_timer;
+	time_save_ui = sys_timer;
 	selected_slot_gone = slot_gone;
 		
 	CMHelper_ConvertValToText(screen, CMHelper_GetValPosFromItemId(screen->hovered->id));
@@ -163,13 +163,13 @@ static float CMHelper_CalculateMotorSpeed()
 
 static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 {
-	if (screen->item_is_selected && screen->hovered != NULL && sys_timer - time_save_ui_1 > slot_blink_period)
+	if (screen->item_is_selected && screen->hovered != NULL && sys_timer - time_save_ui > slot_blink_period)
 	{
 		CMHelper_UpdateValStr_SlotBlink(screen, !selected_slot_gone);
 		ui_update_required = true;
 	}
 	
-	if (can_procedure_in_progress)
+	if (curr_logic_state == LSTATE_CAN_PROCEDURE)
 	{
 		total_motor_movement_time += screen->callback_interval;
 		if (total_motor_movement_time % 1000 == 0)
@@ -191,7 +191,7 @@ static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 			
 			if (time_sec_val == 0 && time_min_val == 0)
 			{
-				can_procedure_in_progress = false;
+				curr_logic_state = LSTATE_NONE;
 				
 				CMHelper_SetElementFunctionality(screen, CM_POS_MASS_ITEM, 1, 1);
 				if (mass_val > 0)
@@ -215,12 +215,7 @@ static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 		}
 	}
 	
-	if (sys_timer - can_last_send_time > 3000 && sys_timer - time_save_ui_2 > 1000)
-	{
-		switch_to_start_menu_allowed = true;
-		
-		CMHelper_SetElementFunctionality(screen, CM_POS_BACK, 1, 1);
-	}
+	CMHelper_SetElementFunctionality(screen, CM_POS_BACK, switch_to_start_menu_allowed, switch_to_start_menu_allowed);
 }
 
 static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
@@ -263,16 +258,12 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 					ui_hoverNext(screen, 1);
 					CMHelper_SetElementFunctionality(screen, CM_POS_FILL_MOTOR, 0, 0);
 					
-					time_save_ui_2 = sys_timer;
-					switch_to_start_menu_allowed = false;
-					
-					can_test_initialization_time = sys_timer;
-					can_should_send_test_package = true;
+					setCurrentLogicState(LSTATE_CAN_TEST);
 					break;
 				}
 				case begin_calibration_id:
 				{
-					if (can_procedure_in_progress)
+					if (curr_logic_state == LSTATE_CAN_PROCEDURE)
 					{
 						CMHelper_SetElementFunctionality(screen, CM_POS_MASS_ITEM, 1, 1);
 						if (mass_val > 0)
@@ -280,8 +271,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 							CMHelper_SetElementFunctionality(screen, CM_POS_COUNT_PARAMS, 1, 1);
 						}
 						
-						switch_to_start_menu_allowed = true;
-						can_procedure_in_progress = false;
+						setCurrentLogicState(LSTATE_NONE);
 						
 						ui_editText(element->visual, labels[CM_POS_BEGIN_CALIBRATION], 0);
 						ui_update_required = true;
@@ -296,9 +286,7 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 						uint8_t deselection_array_2[] = { CM_POS_MASS_ITEM, CM_POS_COUNT_PARAMS, CM_POS_BACK };
 						CMHelper_SetElementFunctionality_Array(screen, deselection_array_2, sizeof(deselection_array_2), 0, 1);
 						
-						time_save_ui_2 = sys_timer;
-						switch_to_start_menu_allowed = false;
-						can_procedure_in_progress = true;
+						setCurrentLogicState(LSTATE_CAN_PROCEDURE);
 						
 						ui_editText(element->visual, "Остановить", 0);
 						ui_update_required = true;
@@ -542,6 +530,5 @@ void UI_BuildCalibrationMenu(UI_Screen* screen)
 	screen->general_callback = CalibrationMenu_ScreenCallback;
 	screen->callback_interval = 50;
 	
-	main_functionality_active = false;
-	switch_to_start_menu_allowed = true;
+	setCurrentLogicState(LSTATE_NONE);
 }

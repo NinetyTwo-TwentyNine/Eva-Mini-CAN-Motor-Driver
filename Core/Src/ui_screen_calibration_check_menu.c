@@ -50,7 +50,7 @@ static uint8_t possible_area_divider_vals[] = {1, 2, 4, 8, 16}, selected_area_di
 static uint8_t selected_slot, selected_slot_gone;
 
 static uint32_t initial_time_total, total_motor_movement_time;
-static uint64_t time_save_ui_1 = 0, time_save_ui_2 = 0;
+static uint64_t time_save_ui;
 static const uint16_t slot_blink_period = 400;
 
 static int16_t CCMHelper_GetValPosFromItemId(uint8_t item_id);
@@ -129,7 +129,7 @@ static void CCMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void CCMHelper_UpdateValStr_SlotBlink(UI_Screen* screen, uint8_t slot_gone)
 {
-	time_save_ui_1 = sys_timer;
+	time_save_ui = sys_timer;
 	selected_slot_gone = slot_gone;
 	
 	CCMHelper_ConvertValToText(screen, CCMHelper_GetValPosFromItemId(screen->hovered->id));
@@ -188,13 +188,13 @@ static void CCMHelper_CalculateRequiredTime()
 
 static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 {
-	if (screen->item_is_selected && screen->hovered != NULL && sys_timer - time_save_ui_1 > slot_blink_period)
+	if (screen->item_is_selected && screen->hovered != NULL && sys_timer - time_save_ui > slot_blink_period)
 	{
 		CCMHelper_UpdateValStr_SlotBlink(screen, !selected_slot_gone);
 		ui_update_required = true;
 	}
 	
-	if (can_procedure_in_progress)
+	if (curr_logic_state == LSTATE_CAN_PROCEDURE)
 	{
 		total_motor_movement_time += screen->callback_interval;
 		counted_mass_val = round( (float)mass_per_turn_val * (current_can_motor_speed * (float)total_motor_movement_time / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
@@ -222,8 +222,8 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 		
 		if (time_left == 0)
 		{
-			can_procedure_in_progress = false;
-				
+			curr_logic_state = LSTATE_NONE;
+			
 			CCMHelper_SetElementFunctionality(screen, CCM_POS_ACTUAL_MASS_ITEM, 1, 1);
 			if (actual_mass_val > 0)
 			{
@@ -242,12 +242,7 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 		ui_update_required = true;
 	}
 	
-	if (sys_timer - can_last_send_time > 3000 && sys_timer - time_save_ui_2 > 1000)
-	{
-		switch_to_start_menu_allowed = true;
-		
-		CCMHelper_SetElementFunctionality(screen, CCM_POS_BACK, 1, 1);
-	}
+	CCMHelper_SetElementFunctionality(screen, CCM_POS_BACK, switch_to_start_menu_allowed, switch_to_start_menu_allowed);
 }
 
 static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press_Type press_type, UI_Element_Interactable* element)
@@ -305,9 +300,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 					ui_hoverNext(screen, 1);
 					CCMHelper_SetElementFunctionality(screen, CCM_POS_BEGIN_CHECK, 0, 0);
 					
-					time_save_ui_2 = sys_timer;
-					switch_to_start_menu_allowed = false;
-					can_procedure_in_progress = true;
+					setCurrentLogicState(LSTATE_CAN_PROCEDURE);
 					
 					ui_update_required = true;
 					
@@ -326,8 +319,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 					ui_hoverNext(screen, 0);
 					CCMHelper_SetElementFunctionality(screen, CCM_POS_STOP_CHECK, 0, 0);
 					
-					switch_to_start_menu_allowed = true;
-					can_procedure_in_progress = false;
+					setCurrentLogicState(LSTATE_NONE);
 						
 					ui_update_required = true;
 					
@@ -598,6 +590,5 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 	screen->general_callback = CalibrationCheckMenu_ScreenCallback;
 	screen->callback_interval = 50;
 	
-	main_functionality_active = false;
-	switch_to_start_menu_allowed = true;
+	setCurrentLogicState(LSTATE_NONE);
 }

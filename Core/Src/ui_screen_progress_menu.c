@@ -83,6 +83,10 @@ static void ProgressMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press_
 			{
 				case session_area_id:
 				{
+					if (current_user_area_session != 0)
+					{
+						user_params_differentiate = true;
+					}
 					current_user_area_session = 0;
 					
 					PMHelper_ConvertValToText(screen, PM_POS_AREA_SESSION_VAL);
@@ -162,7 +166,4 @@ void UI_BuildProgressMenu(UI_Screen* screen)
 	
 	screen->general_callback = ProgressMenu_ScreenCallback;
 	screen->callback_interval = 50;
-	
-	//main_functionality_active = true;
-	switch_to_start_menu_allowed = true;
 }

@@ -128,17 +128,18 @@ extern volatile uint64_t sys_timer;
 // Frequency calculation
 #define SENSOR_COUNT_MAX 8
 
+#define IC_ARRAY32_SIZE 3
 #define IC_ARRAY32_POS_VAL1 0
 #define IC_ARRAY32_POS_VAL2 1
 #define IC_ARRAY32_POS_DIFF 2
-#define IC_ARRAY32_POS_TICK 3
 
+#define IC_ARRAY8_SIZE 4
 #define IC_ARRAY8_POS_CAPTURE_INITIAL 0
 #define IC_ARRAY8_POS_CAPTURE_COMPLETE 1
 #define IC_ARRAY8_POS_CAPTURE_ERROR 2
 #define IC_ARRAY8_POS_OVERFLOW_COUNT 3
 
-extern volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX];
+extern volatile uint32_t IC_Array32[3][SENSOR_COUNT_MAX];
 extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
 
 
@@ -209,9 +210,13 @@ extern uint64_t can_last_send_time, can_test_initialization_time;
 #define UI_MAIN_COLOR_INVERTED 1
 
 extern UI_Screen main_screen;
-extern uint8_t ui_update_required, main_ui_on, switch_to_start_menu_allowed;
+extern uint8_t ui_update_required, main_ui_on;
+extern uint8_t switch_to_start_menu_allowed, currently_on_start_menu;
 extern uint64_t ui_last_update_time, ui_last_callback_time;
 
+
+#define SENSOR_POWER_PORT GPIOC
+#define SENSOR_POWER_PIN LL_GPIO_PIN_14
 
 #define MOTOR_CAN_ID 0x16000001
 #define MOTOR_SPEED_LIMIT_MIN 0
@@ -219,15 +224,28 @@ extern uint64_t ui_last_update_time, ui_last_callback_time;
 #define MOTOR_DEFAULT_SPEED_EMPTY 30
 #define MOTOR_TURN_DIRECTION 0x00
 
-#define SENSOR_VALUE_MIN_RANGE_FAN 20
+#define SENSOR_VALUE_FAN_MIN_RANGE 20
 #define SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION 10
 #define SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION 3
-
 #define SENSOR_VALUE_LOST_TIME 1500
+
+#define SENSOR_TYPE_BUNKER_NPN false
+#define SENSOR_TYPE_SEEDER_NPN false
+
 #define MAIN_LOGIC_TICK_TIME 10
 
-extern uint8_t can_should_send_test_package, can_procedure_in_progress, main_functionality_active;
+typedef enum
+{
+	LSTATE_NONE,
+	LSTATE_CAN_TEST,
+	LSTATE_CAN_PROCEDURE,
+	LSTATE_MAIN_LOGIC,
+} Logic_State_Type;
+
+extern Logic_State_Type curr_logic_state;
 extern uint64_t main_logic_last_tick_time;
+
+void setCurrentLogicState(Logic_State_Type new_state);
 
 
 #define USER_PARAMS_COUNT 9
@@ -243,13 +261,16 @@ extern uint64_t main_logic_last_tick_time;
 
 #define USER_DATA_SAVE_PAGE_ADDR 0x0800FC00
 #define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 3)*4)
+#define USER_DATA_SAVE_INTERAVAL 600000 // 10 minutes
 
-#define USER_DATA_AREA_SAVE_PRECISION 1 // 1 digit after comma
+#define USER_DATA_SAVE_AREA_PRECISION 2 // amount of digits after comma
 
+extern uint8_t user_params_differentiate;
 extern uint32_t user_params_array[USER_PARAMS_COUNT];
+extern uint64_t user_params_last_save_time;
 extern float current_user_area_total, current_user_area_session;
 
-extern uint8_t current_state_seeder_up, current_state_bunker_full;
+extern uint8_t current_state_seeder_down, current_state_bunker_full;
 extern float current_can_motor_speed, current_actual_motor_speed, current_fan_speed, current_seeder_speed, current_quota;
 
 
@@ -278,7 +299,7 @@ extern float current_can_motor_speed, current_actual_motor_speed, current_fan_sp
 
 extern uint8_t error_notification_beep_counter[ERROR_COUNT_TOTAL];
 extern uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL];
-extern uint64_t error_last_activated[ERROR_COUNT_TOTAL], error_notification_start_end[ERROR_COUNT_TOTAL];
+extern uint64_t error_last_activation_change[ERROR_COUNT_TOTAL], error_notification_start_end[ERROR_COUNT_TOTAL], error_on_time[ERROR_COUNT_TOTAL];
 
 void updateErrorState(uint8_t state_pos, uint8_t error_pos, uint8_t value);
 

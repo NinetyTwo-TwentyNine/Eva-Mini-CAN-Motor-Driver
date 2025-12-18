@@ -70,7 +70,4 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 	
   // Default hover index
 	ui_hoverNext(screen, 1);
-	
-	//main_functionality_active = true;
-	switch_to_start_menu_allowed = true;
 }

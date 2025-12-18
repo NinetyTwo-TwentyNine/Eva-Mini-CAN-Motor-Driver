@@ -71,18 +71,19 @@ static void ErrorsMenu_ScreenCallback(UI_Screen* screen)
 		}
 	}
 	
-	uint8_t should_sort_again = true;
-	while (should_sort_again)
+	uint8_t n = error_count;
+	while (n > 1)
 	{
-		should_sort_again = false;
-		for (uint8_t i = 0; i < error_count - 1; i++)
-		{
-			if (error_last_activated[error_curr_array[i]] < error_last_activated[error_curr_array[i + 1]])
-			{
-				should_sort_again = true;
+    uint8_t new_n = 0;
+    for (uint8_t i = 0; i + 1 < n; i++)
+    {
+			if (error_on_time[error_curr_array[i]] < error_on_time[error_curr_array[i + 1]])
+      {
 				swap(error_curr_array[i], error_curr_array[i + 1]);
+				new_n = i + 1;
 			}
 		}
+		n = new_n;
 	}
 	
 	for (uint8_t i = 0; i < error_count; i++)
@@ -182,9 +183,6 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 	
 	screen->callback_interval = 100;
 	screen->general_callback = ErrorsMenu_ScreenCallback;
-	
-	//main_functionality_active = true;
-	switch_to_start_menu_allowed = true;
 	
 	screen->general_callback(screen);
 	ui_last_callback_time = sys_timer;

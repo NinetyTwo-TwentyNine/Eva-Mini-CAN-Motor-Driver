@@ -47,8 +47,8 @@
 volatile uint64_t sys_timer = 0;
 
 // Frequency calculation
-volatile uint32_t IC_Array32[4][SENSOR_COUNT_MAX] = {{0}, {0}, {0}, {0}};
-volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initialize the 'initial' pos (IC_ARRAY8_POS_CAPTURE_INITIAL) as true
+volatile uint32_t IC_Array32[IC_ARRAY32_SIZE][SENSOR_COUNT_MAX] = {{0}, {0}, {0}};
+volatile uint8_t IC_Array8[IC_ARRAY8_SIZE][SENSOR_COUNT_MAX] = {{1}, {1}, {1}, {1}}; // Initialize the 'initial' pos (IC_ARRAY8_POS_CAPTURE_INITIAL) as true
 
 float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 uint64_t sensor_last_check_time[SENSOR_COUNT_MAX] = {0};
@@ -83,20 +83,23 @@ uint64_t can_last_send_time = 0, can_test_initialization_time = 0;
 // UI/Logic
 UI_Screen main_screen = {0};
 uint8_t main_ui_on = false, ui_update_required = false;
+uint8_t switch_to_start_menu_allowed = false, currently_on_start_menu = false;
 uint64_t ui_last_update_time = 0, ui_last_callback_time = 0;
 
-uint8_t switch_to_start_menu_allowed = false, can_should_send_test_package = false, can_procedure_in_progress = false, main_functionality_active = false;
+Logic_State_Type curr_logic_state = LSTATE_NONE;
 uint64_t main_logic_last_tick_time = 0;
 
+uint8_t user_params_differentiate = false;
 uint32_t user_params_array[USER_PARAMS_COUNT] = {0};
+uint64_t user_params_last_save_time = 0;
 float current_user_area_total = 0, current_user_area_session = 0;
 
-uint8_t current_state_seeder_up = false, current_state_bunker_full = false;
+uint8_t current_state_seeder_down = false, current_state_bunker_full = false;
 float current_can_motor_speed = 0, current_actual_motor_speed = 0, current_fan_speed = 0, current_seeder_speed = 0, current_quota = 0;
 
 uint8_t error_notification_beep_counter[ERROR_COUNT_TOTAL] = {0};
 uint8_t error_state_array[ERROR_STATE_ARRAY_COUNT][ERROR_COUNT_TOTAL] = {{0}, {0}, {0}, {0}};
-uint64_t error_last_activated[ERROR_COUNT_TOTAL] = {0}, error_notification_start_end[ERROR_COUNT_TOTAL] = {0};
+uint64_t error_last_activation_change[ERROR_COUNT_TOTAL] = {0}, error_notification_start_end[ERROR_COUNT_TOTAL] = {0}, error_on_time[ERROR_COUNT_TOTAL] = {0};
 
 // Resources
 uint8_t logo_ok_mark[LOGO_OK_MARK_SIZE] = {
@@ -138,7 +141,6 @@ uint8_t logo_error_alert[LOGO_ERROR_ALERT_SIZE] = {
   0xFF, 0x80
 };
 
-
 uint8_t logo_seeder_state[LOGO_SEEDER_STATE_SIZE] = {
 	0x1F,
   0x1F,
@@ -170,6 +172,26 @@ static void MX_TIM4_Init(void);
 /* USER CODE BEGIN 0 */
 
 
+void setCurrentLogicState(Logic_State_Type new_state)
+{
+	if (curr_logic_state != new_state && (new_state == LSTATE_CAN_TEST || new_state == LSTATE_CAN_PROCEDURE))
+	{
+		switch(new_state)
+		{
+			case LSTATE_CAN_TEST: case LSTATE_CAN_PROCEDURE:
+				switch_to_start_menu_allowed = false;
+				can_test_initialization_time = sys_timer;
+				break;
+			case LSTATE_MAIN_LOGIC:
+				switch_to_start_menu_allowed = true;
+				break;
+			case LSTATE_NONE:
+				break;
+		}
+	}
+	curr_logic_state = new_state;
+}
+
 void updateErrorState(uint8_t state_pos, uint8_t error_pos, uint8_t value)
 {
 	if (state_pos >= ERROR_STATE_ARRAY_COUNT || error_pos >= ERROR_COUNT_TOTAL) return;
@@ -178,8 +200,10 @@ void updateErrorState(uint8_t state_pos, uint8_t error_pos, uint8_t value)
 	{
 		switch(state_pos)
 		{
-			case ERROR_STATE_PREACTIVE: case ERROR_STATE_ACTIVE:
-				error_last_activated[error_pos] = sys_timer; break;
+			case ERROR_STATE_ACTIVE:
+				error_on_time[error_pos] = sys_timer; // No break by design
+			case ERROR_STATE_PREACTIVE: 
+				error_last_activation_change[error_pos] = sys_timer; break;
 			case ERROR_NOTIFICATION_IN_PROGRESS: case ERROR_NOTIFICATION_COMPLETE:
 				error_notification_start_end[error_pos] = sys_timer; error_notification_beep_counter[error_pos] = 0; break;
 		}
@@ -222,7 +246,7 @@ void sequence_turnDisplayOn(uint8_t on)
 		gfx_setTextSize(1);
 		gfx_setTextColor(WHITE, WHITE);
 		gfx_setCursor(0,0);
-
+		
 		for (uint16_t i=148; i < 294; i++) {
 			if (i == '\n') continue;
 			gfx_write(i);
@@ -233,21 +257,21 @@ void sequence_turnDisplayOn(uint8_t on)
 		}
 		display_update();
 		gfx_clearBuffer();
-						
+		
 		LL_mDelay(2000);
 		UI_BuildStartMenu(&main_screen);
 		display_buildUIScreen(&main_screen);
 		
-		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn on the sensors
+		LL_GPIO_SetOutputPin(SENSOR_POWER_PORT, SENSOR_POWER_PIN); // Turn on the sensors
 	}
 	else
 	{
 		ui_clearScreen(&main_screen);
 		gfx_clearBuffer();
 		display_update();
-		LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14); // Turn off the sensors
-		can_procedure_in_progress = false;
-		can_should_send_test_package = false;
+		
+		LL_GPIO_ResetOutputPin(SENSOR_POWER_PORT, SENSOR_POWER_PIN); // Turn off the sensors
+		curr_logic_state = LSTATE_NONE;
 	}
 	main_ui_on = on;
 }
@@ -321,10 +345,22 @@ int main(void)
 		if (timer_address == NULL) continue;
 		switch(timer_address->channel)
 		{
-			case 1: LL_TIM_EnableIT_CC1(timer_address->timer); break;
-			case 2: LL_TIM_EnableIT_CC2(timer_address->timer); break;
-			case 3: LL_TIM_EnableIT_CC3(timer_address->timer); break;
-			case 4: LL_TIM_EnableIT_CC4(timer_address->timer); break;
+			case 1:
+        LL_TIM_CC_EnableChannel(timer_address->timer, LL_TIM_CHANNEL_CH1);
+        LL_TIM_EnableIT_CC1(timer_address->timer);
+        break;
+			case 2:
+        LL_TIM_CC_EnableChannel(timer_address->timer, LL_TIM_CHANNEL_CH2);
+        LL_TIM_EnableIT_CC2(timer_address->timer);
+        break;
+			case 3:
+        LL_TIM_CC_EnableChannel(timer_address->timer, LL_TIM_CHANNEL_CH3);
+        LL_TIM_EnableIT_CC3(timer_address->timer);
+        break;
+			case 4:
+        LL_TIM_CC_EnableChannel(timer_address->timer, LL_TIM_CHANNEL_CH4);
+        LL_TIM_EnableIT_CC4(timer_address->timer);
+        break;
 		}
 	}
 	
@@ -372,118 +408,147 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		if (main_functionality_active)
+		switch(curr_logic_state)
 		{
-			for (uint8_t sensor_num = 0; sensor_num < SENSOR_COUNT_MAX; sensor_num++)
+			case LSTATE_MAIN_LOGIC:
 			{
-				if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
+				for (uint8_t sensor_num = 0; sensor_num < SENSOR_COUNT_MAX; sensor_num++)
 				{
-					sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
-					sensor_last_check_time[sensor_num] = sys_timer;
-				}
-			}
-			
-			if (sys_timer - main_logic_last_tick_time >= MAIN_LOGIC_TICK_TIME)
-			{
-				main_logic_last_tick_time = sys_timer;
-				
-				SENSADDR_GPIO_TypeDef *seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER], *bunker_sensor_addr = sensor_address_gpio[SENSADDR_POS_BUNKER];
-				current_state_seeder_up = LL_GPIO_IsInputPinSet(seeder_sensor_addr->port, seeder_sensor_addr->pin_mask);
-				current_state_bunker_full = LL_GPIO_IsInputPinSet(bunker_sensor_addr->port, bunker_sensor_addr->pin_mask);
-				
-				float prev_seeder_speed = current_seeder_speed;
-				
-				current_fan_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
-				current_seeder_speed = calculateSeederSpeed_fromSensorOutput(getUserParameter(USER_PARAM_WHEEL_DIAMETER), getUserParameter(USER_PARAM_WHEEL_PULSES), sensor_frequency[SENSADDR_POS_SPEED]);
-				if (current_state_seeder_up) {
-					current_actual_motor_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
-					current_quota = calculateQuota_fromSpeed(getUserParameter(USER_PARAM_SEEDER_WIDTH), current_seeder_speed, getUserParameter(USER_PARAM_MASS_PER_TURN), current_actual_motor_speed);
-				}
-				else
-				{
-					current_actual_motor_speed = 0;
-					current_quota = 0;
-				}
-				
-				// Main logic (if the setup was completed)
-				if (checkIfAllUserParamsAreSet())
-				{
-					updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_EMPTY, !current_state_bunker_full);
-					
-					uint8_t fan_speed_check_ok = (current_fan_speed <= getUserParameter(USER_PARAM_FAN_SPEED_MAX) && current_fan_speed >= getUserParameter(USER_PARAM_FAN_SPEED_MIN));
-					updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_FAN, !fan_speed_check_ok);
-					
-					if (current_state_seeder_up && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+					if (SENSADDR_MASK_TIMS & (1 << sensor_num))
 					{
-						float low_border, high_border;
-						
-						low_border = current_can_motor_speed * (100 - SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
-						high_border = current_can_motor_speed * (100 + SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
-						uint8_t motor_speed_check_ok = (current_actual_motor_speed >= low_border && current_actual_motor_speed <= high_border);
-						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok);
-						
-						uint8_t seeder_speed_check_ok = (current_seeder_speed <= getUserParameter(USER_PARAM_SPEED_MAX) && current_seeder_speed >= getUserParameter(USER_PARAM_SPEED_MIN));
-						if (!seeder_speed_check_ok)
+						if (IC_Array8[IC_ARRAY8_POS_CAPTURE_ERROR][sensor_num] == false && IC_Array8[IC_ARRAY8_POS_CAPTURE_COMPLETE][sensor_num] == true)
 						{
-							current_can_motor_speed = (current_seeder_speed > getUserParameter(USER_PARAM_SPEED_MAX)) ? MOTOR_SPEED_LIMIT_MAX : MOTOR_SPEED_LIMIT_MIN;
+							sensor_frequency[sensor_num] = calculate_frequency(sensor_num);
+							sensor_last_check_time[sensor_num] = sys_timer;
 						}
-						else
+						else if (sys_timer - sensor_last_check_time[sensor_num] >= SENSOR_VALUE_LOST_TIME)
 						{
-							current_can_motor_speed = calculateMotorSpeed_fromSpeed(getUserParameter(USER_PARAM_QUOTA), getUserParameter(USER_PARAM_SEEDER_WIDTH), getUserParameter(USER_PARAM_MASS_PER_TURN), current_seeder_speed);
+							sensor_frequency[sensor_num] = 0;
 						}
-						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_SPEED, !seeder_speed_check_ok);
-						
-						low_border = (float)getUserParameter(USER_PARAM_QUOTA) * (100 - SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
-						high_border = (float)getUserParameter(USER_PARAM_QUOTA) * (100 + SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
-						uint8_t quota_check_ok = (current_quota >= low_border && current_quota <= high_border);
-						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_QUOTA, !quota_check_ok);
-						
-						sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
-					}
-					
-					if (current_state_seeder_up)
-					{
-						float area_addition = (prev_seeder_speed + current_seeder_speed) / 2 * METERS_IN_KILOMETER / SECONDS_IN_MINUTE / MINUTES_IN_HOUR * getUserParameter(USER_PARAM_SEEDER_WIDTH) * (MAIN_LOGIC_TICK_TIME / MILLIS_IN_SECOND) / SQUARE_METERS_IN_HECTARE;
-						if (current_quota < getUserParameter(USER_PARAM_QUOTA))
-						{
-							area_addition *= current_quota / getUserParameter(USER_PARAM_QUOTA);
-						}
-						
-						current_user_area_total += area_addition;
-						current_user_area_session += area_addition;
 					}
 				}
-			}
-		}
-		else if (can_procedure_in_progress && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
-		{
-			sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
-		}
-		else if (can_should_send_test_package && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
-		{
-			if (sys_timer - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
-			{
-				sendCANPackage(0, MOTOR_TURN_DIRECTION);
-				can_should_send_test_package = false;
-			}
-			else
-			{
-				sendCANPackage(MOTOR_DEFAULT_SPEED_EMPTY, MOTOR_TURN_DIRECTION);
-			}
-		}
-		
-		for (uint8_t i = 0; i < SENSOR_COUNT_MAX; i++)
-		{
-			if (SENSADDR_MASK_TIMS & (1 << i))
-			{
-				if (sys_timer - sensor_last_check_time[i] >= SENSOR_VALUE_LOST_TIME)
+				
+				if (sys_timer - main_logic_last_tick_time >= MAIN_LOGIC_TICK_TIME)
 				{
-					sensor_frequency[i] = 0;
+					main_logic_last_tick_time = sys_timer;
+					
+					uint32_t user_wheel_diameter = getUserParameter(USER_PARAM_WHEEL_DIAMETER), user_wheel_pulses = getUserParameter(USER_PARAM_WHEEL_PULSES),
+									 user_speed_min = getUserParameter(USER_PARAM_SPEED_MIN), user_speed_max = getUserParameter(USER_PARAM_SPEED_MAX),
+									 user_fan_speed_min = getUserParameter(USER_PARAM_FAN_SPEED_MIN), user_fan_speed_max = getUserParameter(USER_PARAM_FAN_SPEED_MAX),
+									 user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameter(USER_PARAM_QUOTA),
+									 user_mass_per_turn = getUserParameter(USER_PARAM_MASS_PER_TURN);
+					
+					
+					SENSADDR_GPIO_TypeDef *seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER], *bunker_sensor_addr = sensor_address_gpio[SENSADDR_POS_BUNKER];
+					uint8_t bunker_sensor_output = LL_GPIO_IsInputPinSet(bunker_sensor_addr->port, bunker_sensor_addr->pin_mask), seeder_sensor_output = LL_GPIO_IsInputPinSet(seeder_sensor_addr->port, seeder_sensor_addr->pin_mask);
+					// Each sensor goes through an optocoupler (with a pull up on the MCU's side), so the logic is inversed
+					current_state_seeder_down = (SENSOR_TYPE_SEEDER_NPN)? seeder_sensor_output : !seeder_sensor_output;
+					current_state_bunker_full = (SENSOR_TYPE_BUNKER_NPN)? bunker_sensor_output : !bunker_sensor_output;
+					
+					float prev_seeder_speed = current_seeder_speed;
+					
+					current_fan_speed = sensor_frequency[SENSADDR_POS_FAN] * SECONDS_IN_MINUTE;
+					current_seeder_speed = calculateSeederSpeed_fromSensorOutput(user_wheel_diameter, user_wheel_pulses, sensor_frequency[SENSADDR_POS_SPEED]);
+					if (current_state_seeder_down)
+					{
+						current_actual_motor_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
+						current_quota = calculateQuota_fromSpeed(user_seeder_width, current_seeder_speed, user_mass_per_turn, current_actual_motor_speed);
+					}
+					else
+					{
+						current_actual_motor_speed = 0;
+						current_quota = 0;
+					}
+					
+					// Main logic (if the setup was completed)
+					if (checkIfAllUserParamsAreSet())
+					{
+						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_EMPTY, !current_state_bunker_full);
+						
+						uint8_t fan_speed_check_ok = (current_fan_speed <= user_fan_speed_max && current_fan_speed >= user_fan_speed_min);
+						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_FAN, !fan_speed_check_ok);
+						
+						if (current_state_seeder_down && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+						{
+							float low_border, high_border;
+							
+							low_border = current_can_motor_speed * (100 - SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
+							high_border = current_can_motor_speed * (100 + SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
+							uint8_t motor_speed_check_ok = (current_actual_motor_speed >= low_border && current_actual_motor_speed <= high_border);
+							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok);
+							
+							uint8_t seeder_speed_check_ok = (current_seeder_speed <= user_speed_max && current_seeder_speed >= user_fan_speed_min);
+							if (!seeder_speed_check_ok)
+							{
+								current_can_motor_speed = (current_seeder_speed > user_speed_max) ? MOTOR_SPEED_LIMIT_MAX : MOTOR_SPEED_LIMIT_MIN;
+							}
+							else
+							{
+								current_can_motor_speed = calculateMotorSpeed_fromSpeed(user_quota, user_seeder_width, user_mass_per_turn, current_seeder_speed);
+							}
+							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_SPEED, !seeder_speed_check_ok);
+							
+							low_border = (float)user_quota * (100 - SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
+							high_border = (float)user_quota * (100 + SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
+							uint8_t quota_check_ok = (current_quota >= low_border && current_quota <= high_border);
+							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_QUOTA, !quota_check_ok);
+							
+							sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
+						}
+						
+						if (current_state_seeder_down)
+						{
+							float area_addition = calculateAreaAddition_fromSpeed(prev_seeder_speed, current_seeder_speed, MAIN_LOGIC_TICK_TIME, user_seeder_width);
+							if (current_quota < user_quota)
+							{
+								area_addition *= current_quota / (float)user_quota;
+							}
+							
+							current_user_area_total += area_addition;
+							current_user_area_session += area_addition;
+							
+							if (area_addition != 0)
+							{
+								user_params_differentiate = true;
+							}
+						}
+					}
 				}
 			}
+			break;
+			case LSTATE_CAN_PROCEDURE:
+			{
+				if ((sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+				{
+					sendCANPackage(current_can_motor_speed, MOTOR_TURN_DIRECTION);
+				}
+			}
+			break;
+			case LSTATE_CAN_TEST:
+			{
+				if ((sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+				{
+					if (sys_timer - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
+					{
+						sendCANPackage(0, MOTOR_TURN_DIRECTION);
+						curr_logic_state = LSTATE_NONE;
+					}
+					else
+					{
+						sendCANPackage(MOTOR_DEFAULT_SPEED_EMPTY, MOTOR_TURN_DIRECTION);
+					}
+				}
+			}
+			break;
+			case LSTATE_NONE:
+				if (sys_timer - can_test_initialization_time > 1 * MILLIS_IN_SECOND && sys_timer - can_last_send_time > 3 * MILLIS_IN_SECOND)
+				{
+					switch_to_start_menu_allowed = true;
+				}
+			break;
 		}
 		
-		// Button checking
+		
 		if (mcp23_check_required && (sys_timer - mcp23_last_check_time) >= MCP23008_DEBOUNCE_WAIT_TIME)
 		{
 			mcp23008_matrix_check();
@@ -505,7 +570,7 @@ int main(void)
 						ui_update_required = true;
 						break;
 					case MATRIX_POS_BUTTON_MENU:
-						if (switch_to_start_menu_allowed)
+						if (switch_to_start_menu_allowed && !currently_on_start_menu)
 						{
 							UI_BuildStartMenu(&main_screen);
 							ui_update_required = true;
@@ -522,14 +587,11 @@ int main(void)
 						}
 						else
 						{
-							if (sys_timer - mcp_off_button_time <= (MCP23008_BUTTON_CHECK_TIME + 25))
-							{
-								mcp_off_button_counter++;
-							}
-							else
+							if (sys_timer - mcp_off_button_time > (MCP23008_BUTTON_CHECK_TIME + 25))
 							{
 								mcp_off_button_counter = 0;
 							}
+							mcp_off_button_counter++;
 							mcp_off_button_time = sys_timer;
 							
 							if (mcp_off_button_counter >= 10)
@@ -556,7 +618,6 @@ int main(void)
 			}
 		}
 		
-		// UI updating
 		if ( (sys_timer - ui_last_update_time) >= (1000 / UI_UPDATE_MAX_FREQUENCY) && ui_update_required && main_ui_on )
 		{
 			display_buildUIScreen(&main_screen);
@@ -741,7 +802,7 @@ static void MX_TIM1_Init(void)
   PA11   ------> TIM1_CH4
   */
   GPIO_InitStruct.Pin = LL_GPIO_PIN_10|LL_GPIO_PIN_11;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* TIM1 interrupt Init */
@@ -751,9 +812,9 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 1 */
 
   /* USER CODE END TIM1_Init 1 */
-  TIM_InitStruct.Prescaler = 900-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Prescaler = 1800-1;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 65536-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Autoreload = 65536-1;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   TIM_InitStruct.RepetitionCounter = 0;
   LL_TIM_Init(TIM1, &TIM_InitStruct);
@@ -802,7 +863,7 @@ static void MX_TIM2_Init(void)
   PA3   ------> TIM2_CH4
   */
   GPIO_InitStruct.Pin = LL_GPIO_PIN_0|LL_GPIO_PIN_1|LL_GPIO_PIN_2|LL_GPIO_PIN_3;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* TIM2 interrupt Init */
@@ -812,9 +873,9 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
-  TIM_InitStruct.Prescaler = 900-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Prescaler = 1800-1;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 65536-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Autoreload = 65536-1;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   LL_TIM_Init(TIM2, &TIM_InitStruct);
   LL_TIM_DisableARRPreload(TIM2);
@@ -867,9 +928,9 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 1 */
 
   /* USER CODE END TIM3_Init 1 */
-  TIM_InitStruct.Prescaler = 900-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Prescaler = 1800-1;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 65536-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Autoreload = 65536-1;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   LL_TIM_Init(TIM3, &TIM_InitStruct);
   LL_TIM_DisableARRPreload(TIM3);
@@ -906,9 +967,9 @@ static void MX_TIM4_Init(void)
   /* USER CODE BEGIN TIM4_Init 1 */
 
   /* USER CODE END TIM4_Init 1 */
-  TIM_InitStruct.Prescaler = 24-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Prescaler = 24-1;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 30000-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Autoreload = 30000-1;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   LL_TIM_Init(TIM4, &TIM_InitStruct);
   LL_TIM_DisableARRPreload(TIM4);
