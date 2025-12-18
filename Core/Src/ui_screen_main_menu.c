@@ -109,6 +109,7 @@ static void MainMenu_ScreenCallback(UI_Screen* screen)
 		errors_present = 1;
 		if (error_on_time[i] > time_comparison)
 		{
+			time_comparison = error_on_time[i];
 			chosen_error = i;
 		}
 	}

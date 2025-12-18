@@ -1,5 +1,9 @@
 #include "user_params_management.h"
 
+static const uint8_t flg_save_pos = (USER_DATA_SAVE_SIZE/2 - 1), crc_save_pos = (USER_DATA_SAVE_SIZE/2 - 2); // Flag and CRC positions (in half-words)
+static const uint8_t params_total_count = USER_PARAMS_COUNT + 2, slots_total_count = 1024/USER_DATA_SAVE_SIZE;
+static const uint16_t flg_slot_empty = 0xFFFF, flg_slot_valid = 0x0000;
+static const uint16_t crc_calc_bgn = 0xFFFF, crc_calc_pwr = 0x1021;
 
 // ======================
 // Parameter management
@@ -148,47 +152,71 @@ uint32_t calculateMaxMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_
 // Parameter storing
 // ======================
 
+uint16_t crc16_ccitt(const uint8_t *data, uint16_t len)
+{
+	uint16_t crc = crc_calc_bgn;
+
+	while (len--)
+	{
+		crc ^= (uint16_t)(*data++) << 8;
+		
+		for (uint8_t i = 0; i < 8; i++)
+		{
+			if (crc & 0x8000)
+			{
+				crc = (crc << 1) ^ crc_calc_pwr;
+			}
+			else
+			{
+				crc <<= 1;
+			}
+		}
+	}
+
+	return crc;
+}
+
 void save_user_params_batch()
 {
-	uint32_t flg_pos = (USER_DATA_SAVE_SIZE/2 - 1); // Flag pos in half-words (the last position in the data save)
-	
 	uint32_t begin_addr;
-	uint8_t count = 1024/USER_DATA_SAVE_SIZE;
-	for (uint8_t i = 0; i < count; i++)
+	for (uint8_t i = 0; i < slots_total_count; i++)
 	{
 		begin_addr = USER_DATA_SAVE_PAGE_ADDR + i * USER_DATA_SAVE_SIZE;
 		
-		uint16_t save_flg = flash_read16(begin_addr + flg_pos * 2);
-		if (save_flg == 0xFFFF)
+		uint16_t save_flg = flash_read16(begin_addr + flg_save_pos * 2);
+		if (save_flg == flg_slot_empty)
 		{
 			break;
 		}
 		
-		if (i == count - 1)
+		if (i == slots_total_count - 1)
 		{
 			if (!flash_erase_page(USER_DATA_SAVE_PAGE_ADDR)) return; // abort if erase fails
 			begin_addr = USER_DATA_SAVE_PAGE_ADDR;
 		}
 	}
 	
-	flash_save16(begin_addr + flg_pos * 2, 0x0000);
 	
-	for (uint8_t j = 0; j < USER_PARAMS_COUNT; j++)
-	{
-		flash_save32(begin_addr + j * 4, getUserParameter(j));
-	}
-	begin_addr += USER_PARAMS_COUNT * 4;
-			
-	uint32_t area_scaler = 1;
-	for (uint8_t j = 0; j < USER_DATA_SAVE_AREA_PRECISION; j++)
-	{
-		area_scaler *= 10;
-	}
-	
+	uint32_t area_scaler = USER_DATA_SAVE_AREA_SCALER;
 	uint32_t total_area = round(current_user_area_total * area_scaler), session_area = round(current_user_area_session * area_scaler);
-	flash_save32(begin_addr, total_area);
-	begin_addr += 4;
-	flash_save32(begin_addr, session_area);
+	
+	uint32_t params_array[params_total_count] = {0};
+	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
+	{
+		params_array[i] = getUserParameter(i);
+	}
+	params_array[params_total_count-2] = total_area;
+	params_array[params_total_count-1] = session_area;
+	
+	uint16_t crc16 = crc16_ccitt((uint8_t*)params_array, sizeof(params_array));
+	
+	
+	flash_save16(begin_addr + flg_save_pos * 2, flg_slot_valid);
+	for (uint8_t i = 0; i < params_total_count; i++)
+	{
+		flash_save32(begin_addr + i * 4, params_array[i]);
+	}
+	flash_save16(begin_addr + crc_save_pos * 2, crc16);
 	
 	user_params_differentiate = false;
 	user_params_last_save_time = sys_timer;
@@ -198,42 +226,54 @@ void save_user_params_batch()
 
 void restore_user_params_batch()
 {
-	uint32_t flg_pos = (USER_DATA_SAVE_SIZE/2 - 1); // Flag pos in half-words (the last position in the data save)
+	uint32_t params_array[params_total_count] = {0};
 	
 	uint32_t begin_addr;
-	uint8_t count = 1024/USER_DATA_SAVE_SIZE;
-	for (uint8_t i = count - 1; i <= count - 1; i--)
+	uint8_t invalid_slots_found = false;
+	for (uint8_t i = slots_total_count - 1; i <= slots_total_count - 1; i--)
 	{
 	  begin_addr = USER_DATA_SAVE_PAGE_ADDR + i * USER_DATA_SAVE_SIZE;
-		uint16_t save_flg = flash_read16(begin_addr + flg_pos * 2);
-		if (save_flg != 0xFFFF)
+		uint16_t save_flg = flash_read16(begin_addr + flg_save_pos * 2);
+		if (save_flg == flg_slot_valid)
 		{
-			break;
+			for (uint8_t j = 0; j < params_total_count; j++)
+			{
+				params_array[j] = flash_read32(begin_addr + j * 4);
+			}
+	
+			uint16_t calc_crc16 = crc16_ccitt((uint8_t*)params_array, sizeof(params_array)), actl_crc16 = flash_read16(begin_addr + crc_save_pos * 2);
+			if (actl_crc16 != calc_crc16)
+			{
+				invalid_slots_found = true;
+			}
+			else
+			{
+				break;
+			}
+		}
+		else if (save_flg != flg_slot_empty)
+		{
+			invalid_slots_found = true;
 		}
 		
 		if (i == 0)
 		{
+			if (invalid_slots_found)
+			{
+				flash_erase_page(USER_DATA_SAVE_PAGE_ADDR);
+			}
 			return;
 		}
 	}
 	
-	for (uint8_t j = 0; j < USER_PARAMS_COUNT; j++)
-	{
-		setUserParameter(j, flash_read32(begin_addr + j * 4));
-	}
-	begin_addr += USER_PARAMS_COUNT * 4;
 	
-	uint32_t area_scaler = 1;
-	for (uint8_t j = 0; j < USER_DATA_SAVE_AREA_PRECISION; j++)
+	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
 	{
-		area_scaler *= 10;
+		setUserParameter(i, params_array[i]);
 	}
-	
-	uint32_t total_area = flash_read32(begin_addr);
-	current_user_area_total = (float)total_area / (float)area_scaler;
-	begin_addr += 4;
-	uint32_t session_area = flash_read32(begin_addr);
-	current_user_area_session = (float)session_area / (float)area_scaler;
+	uint32_t area_scaler = USER_DATA_SAVE_AREA_SCALER;
+	current_user_area_total = (float)params_array[params_total_count - 2] / (float)area_scaler;
+	current_user_area_session = (float)params_array[params_total_count - 1] / (float)area_scaler;
 	
 	user_params_differentiate = false;
 	user_params_last_save_time = sys_timer;

@@ -54,9 +54,9 @@ float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 uint64_t sensor_last_check_time[SENSOR_COUNT_MAX] = {0};
 
 SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX] = {
-	&(SENSADDR_TIM_TypeDef){TIM2, 1},
-	&(SENSADDR_TIM_TypeDef){TIM2, 2},
 	&(SENSADDR_TIM_TypeDef){TIM2, 3},
+	&(SENSADDR_TIM_TypeDef){TIM2, 2},
+	&(SENSADDR_TIM_TypeDef){TIM2, 1},
 	NULL,
 	NULL
 };
@@ -271,7 +271,7 @@ void sequence_turnDisplayOn(uint8_t on)
 		display_update();
 		
 		LL_GPIO_ResetOutputPin(SENSOR_POWER_PORT, SENSOR_POWER_PIN); // Turn off the sensors
-		curr_logic_state = LSTATE_NONE;
+		setCurrentLogicState(LSTATE_NONE);
 	}
 	main_ui_on = on;
 }
@@ -452,7 +452,22 @@ int main(void)
 					if (current_state_seeder_down)
 					{
 						current_actual_motor_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
-						current_quota = calculateQuota_fromSpeed(user_seeder_width, current_seeder_speed, user_mass_per_turn, current_actual_motor_speed);
+						
+						float calculation_motor_speed = current_actual_motor_speed;
+						if (error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_CAN])
+						{
+							calculation_motor_speed = 0;
+						}
+						else if (error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_MOTOR])
+						{
+							calculation_motor_speed = current_can_motor_speed;
+						}
+						
+						current_quota = 0;
+						if (!error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_EMPTY])
+						{
+							current_quota = calculateQuota_fromSpeed(user_seeder_width, current_seeder_speed, user_mass_per_turn, calculation_motor_speed);
+						}
 					}
 					else
 					{
@@ -475,9 +490,9 @@ int main(void)
 							low_border = current_can_motor_speed * (100 - SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
 							high_border = current_can_motor_speed * (100 + SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
 							uint8_t motor_speed_check_ok = (current_actual_motor_speed >= low_border && current_actual_motor_speed <= high_border);
-							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok);
+							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok && !error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_CAN]);
 							
-							uint8_t seeder_speed_check_ok = (current_seeder_speed <= user_speed_max && current_seeder_speed >= user_fan_speed_min);
+							uint8_t seeder_speed_check_ok = (current_seeder_speed <= user_speed_max && current_seeder_speed >= user_speed_min);
 							if (!seeder_speed_check_ok)
 							{
 								current_can_motor_speed = (current_seeder_speed > user_speed_max) ? MOTOR_SPEED_LIMIT_MAX : MOTOR_SPEED_LIMIT_MIN;

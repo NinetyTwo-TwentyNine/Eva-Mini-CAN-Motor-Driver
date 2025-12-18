@@ -393,9 +393,18 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 					{
 						if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH) || quota_val != getUserParameter(USER_PARAM_QUOTA))
 						{
-							setUserParameter(USER_PARAM_MASS_PER_TURN, 0);
-							setUserParameter(USER_PARAM_SPEED_MIN, 0);
-							setUserParameter(USER_PARAM_SPEED_MAX, 0);
+							counted_mass_val = 0;
+							counted_min_speed_val = 0;
+							counted_max_speed_val = 0;
+							
+							setUserParameter(USER_PARAM_MASS_PER_TURN, counted_mass_val);
+							setUserParameter(USER_PARAM_SPEED_MIN, counted_min_speed_val);
+							setUserParameter(USER_PARAM_SPEED_MAX, counted_max_speed_val);
+							
+							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MASS_VAL);
+							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MIN_SPEED_VAL);
+							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MAX_SPEED_VAL);
+							
 							if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH))
 							{
 								current_user_area_session = 0;
@@ -493,6 +502,10 @@ void UI_BuildCalibrationMenu(UI_Screen* screen)
   {
 		*val_ptrs[i] = 0;
 	}
+	counted_mass_val = getUserParameter(USER_PARAM_MASS_PER_TURN);
+	counted_min_speed_val = getUserParameter(USER_PARAM_SPEED_MIN);
+	counted_max_speed_val = getUserParameter(USER_PARAM_SPEED_MAX);
+	
 	width_val = getUserParameter(USER_PARAM_SEEDER_WIDTH);
 	quota_val = getUserParameter(USER_PARAM_QUOTA);
 	if (width_val != 0 && quota_val != 0)

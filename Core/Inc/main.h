@@ -263,7 +263,7 @@ void setCurrentLogicState(Logic_State_Type new_state);
 #define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 3)*4)
 #define USER_DATA_SAVE_INTERAVAL 600000 // 10 minutes
 
-#define USER_DATA_SAVE_AREA_PRECISION 2 // amount of digits after comma
+#define USER_DATA_SAVE_AREA_SCALER 1000 // area divider before saving to flash
 
 extern uint8_t user_params_differentiate;
 extern uint32_t user_params_array[USER_PARAMS_COUNT];
