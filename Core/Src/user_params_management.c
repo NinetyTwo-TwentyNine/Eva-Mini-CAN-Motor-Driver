@@ -1,10 +1,5 @@
 #include "user_params_management.h"
 
-static const uint8_t flg_save_pos = (USER_DATA_SAVE_SIZE/2 - 1), crc_save_pos = (USER_DATA_SAVE_SIZE/2 - 2); // Flag and CRC positions (in half-words)
-static const uint8_t params_total_count = USER_PARAMS_COUNT + 2, slots_total_count = 1024/USER_DATA_SAVE_SIZE;
-static const uint16_t flg_slot_empty = 0xFFFF, flg_slot_valid = 0x0000;
-static const uint16_t crc_calc_bgn = 0xFFFF, crc_calc_pwr = 0x1021;
-
 // ======================
 // Parameter management
 // ======================
@@ -154,7 +149,7 @@ uint32_t calculateMaxMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_
 
 uint16_t crc16_ccitt(const uint8_t *data, uint16_t len)
 {
-	uint16_t crc = crc_calc_bgn;
+	uint16_t crc = CRC_CALC_BGN;
 
 	while (len--)
 	{
@@ -164,7 +159,7 @@ uint16_t crc16_ccitt(const uint8_t *data, uint16_t len)
 		{
 			if (crc & 0x8000)
 			{
-				crc = (crc << 1) ^ crc_calc_pwr;
+				crc = (crc << 1) ^ CRC_CALC_PWR;
 			}
 			else
 			{
@@ -179,17 +174,17 @@ uint16_t crc16_ccitt(const uint8_t *data, uint16_t len)
 void save_user_params_batch()
 {
 	uint32_t begin_addr;
-	for (uint8_t i = 0; i < slots_total_count; i++)
+	for (uint8_t i = 0; i < SAVE_SLOTS_COUNT; i++)
 	{
 		begin_addr = USER_DATA_SAVE_PAGE_ADDR + i * USER_DATA_SAVE_SIZE;
 		
-		uint16_t save_flg = flash_read16(begin_addr + flg_save_pos * 2);
-		if (save_flg == flg_slot_empty)
+		uint16_t save_flg = flash_read16(begin_addr + SAVE_POS_FLAG * 2);
+		if (save_flg == SAVE_FLAG_SLOT_EMPTY)
 		{
 			break;
 		}
 		
-		if (i == slots_total_count - 1)
+		if (i == SAVE_SLOTS_COUNT - 1)
 		{
 			if (!flash_erase_page(USER_DATA_SAVE_PAGE_ADDR)) return; // abort if erase fails
 			begin_addr = USER_DATA_SAVE_PAGE_ADDR;
@@ -197,26 +192,27 @@ void save_user_params_batch()
 	}
 	
 	
-	uint32_t area_scaler = USER_DATA_SAVE_AREA_SCALER;
-	uint32_t total_area = round(current_user_area_total * area_scaler), session_area = round(current_user_area_session * area_scaler);
+	uint32_t total_area, session_area;
+	memcpy(&total_area, &current_user_area_total, sizeof(total_area));
+	memcpy(&session_area, &current_user_area_session, sizeof(session_area));
 	
-	uint32_t params_array[params_total_count] = {0};
+	uint32_t params_array[SAVE_PARAMS_COUNT] = {0};
 	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
 	{
 		params_array[i] = getUserParameter(i);
 	}
-	params_array[params_total_count-2] = total_area;
-	params_array[params_total_count-1] = session_area;
+	params_array[SAVE_POS_TOTAL_AREA] = total_area;
+	params_array[SAVE_POS_SESSION_AREA] = session_area;
 	
 	uint16_t crc16 = crc16_ccitt((uint8_t*)params_array, sizeof(params_array));
 	
 	
-	flash_save16(begin_addr + flg_save_pos * 2, flg_slot_valid);
-	for (uint8_t i = 0; i < params_total_count; i++)
+	flash_save16(begin_addr + SAVE_POS_FLAG * 2, SAVE_FLAG_SLOT_VALID);
+	for (uint8_t i = 0; i < SAVE_PARAMS_COUNT; i++)
 	{
 		flash_save32(begin_addr + i * 4, params_array[i]);
 	}
-	flash_save16(begin_addr + crc_save_pos * 2, crc16);
+	flash_save16(begin_addr + SAVE_POS_CRC * 2, crc16);
 	
 	user_params_differentiate = false;
 	user_params_last_save_time = sys_timer;
@@ -226,22 +222,22 @@ void save_user_params_batch()
 
 void restore_user_params_batch()
 {
-	uint32_t params_array[params_total_count] = {0};
+	uint32_t params_array[SAVE_PARAMS_COUNT] = {0};
 	
 	uint32_t begin_addr;
 	uint8_t invalid_slots_found = false;
-	for (uint8_t i = slots_total_count - 1; i <= slots_total_count - 1; i--)
+	for (uint8_t i = SAVE_SLOTS_COUNT - 1; i <= SAVE_SLOTS_COUNT - 1; i--)
 	{
 	  begin_addr = USER_DATA_SAVE_PAGE_ADDR + i * USER_DATA_SAVE_SIZE;
-		uint16_t save_flg = flash_read16(begin_addr + flg_save_pos * 2);
-		if (save_flg == flg_slot_valid)
+		uint16_t save_flg = flash_read16(begin_addr + SAVE_POS_FLAG * 2);
+		if (save_flg == SAVE_FLAG_SLOT_VALID)
 		{
-			for (uint8_t j = 0; j < params_total_count; j++)
+			for (uint8_t j = 0; j < SAVE_PARAMS_COUNT; j++)
 			{
 				params_array[j] = flash_read32(begin_addr + j * 4);
 			}
 	
-			uint16_t calc_crc16 = crc16_ccitt((uint8_t*)params_array, sizeof(params_array)), actl_crc16 = flash_read16(begin_addr + crc_save_pos * 2);
+			uint16_t calc_crc16 = crc16_ccitt((uint8_t*)params_array, sizeof(params_array)), actl_crc16 = flash_read16(begin_addr + SAVE_POS_CRC * 2);
 			if (actl_crc16 != calc_crc16)
 			{
 				invalid_slots_found = true;
@@ -251,7 +247,7 @@ void restore_user_params_batch()
 				break;
 			}
 		}
-		else if (save_flg != flg_slot_empty)
+		else if (save_flg != SAVE_FLAG_SLOT_EMPTY)
 		{
 			invalid_slots_found = true;
 		}
@@ -271,9 +267,8 @@ void restore_user_params_batch()
 	{
 		setUserParameter(i, params_array[i]);
 	}
-	uint32_t area_scaler = USER_DATA_SAVE_AREA_SCALER;
-	current_user_area_total = (float)params_array[params_total_count - 2] / (float)area_scaler;
-	current_user_area_session = (float)params_array[params_total_count - 1] / (float)area_scaler;
+	memcpy(&current_user_area_total, &params_array[SAVE_POS_TOTAL_AREA], sizeof(current_user_area_total));
+	memcpy(&current_user_area_session, &params_array[SAVE_POS_SESSION_AREA], sizeof(current_user_area_session));
 	
 	user_params_differentiate = false;
 	user_params_last_save_time = sys_timer;

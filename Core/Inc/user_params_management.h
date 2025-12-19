@@ -17,6 +17,23 @@
 #define SQUARE_METERS_IN_HECTARE 10000
 
 
+// Flag and CRC positions (in half-words)
+#define SAVE_POS_FLAG (USER_DATA_SAVE_SIZE/2 - 1)
+#define SAVE_POS_CRC (USER_DATA_SAVE_SIZE/2 - 2)
+
+#define SAVE_PARAMS_COUNT (USER_PARAMS_COUNT + 2)
+#define SAVE_SLOTS_COUNT (1024/USER_DATA_SAVE_SIZE)
+
+#define SAVE_POS_TOTAL_AREA (SAVE_PARAMS_COUNT - 2)
+#define SAVE_POS_SESSION_AREA (SAVE_PARAMS_COUNT - 1)
+
+#define SAVE_FLAG_SLOT_EMPTY 0xFFFF
+#define SAVE_FLAG_SLOT_VALID 0x0000
+
+#define CRC_CALC_BGN 0xFFFF
+#define CRC_CALC_PWR 0x1021
+
+
 void setUserParameter(uint8_t pos, uint32_t parameter);
 uint32_t getUserParameter(uint8_t pos);
 uint8_t checkIfAllUserParamsAreSet(void);

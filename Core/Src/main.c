@@ -174,7 +174,7 @@ static void MX_TIM4_Init(void);
 
 void setCurrentLogicState(Logic_State_Type new_state)
 {
-	if (curr_logic_state != new_state && (new_state == LSTATE_CAN_TEST || new_state == LSTATE_CAN_PROCEDURE))
+	if (curr_logic_state != new_state)
 	{
 		switch(new_state)
 		{
@@ -556,10 +556,12 @@ int main(void)
 			}
 			break;
 			case LSTATE_NONE:
+			{
 				if (sys_timer - can_test_initialization_time > 1 * MILLIS_IN_SECOND && sys_timer - can_last_send_time > 3 * MILLIS_IN_SECOND)
 				{
 					switch_to_start_menu_allowed = true;
 				}
+			}
 			break;
 		}
 		
@@ -611,7 +613,10 @@ int main(void)
 							
 							if (mcp_off_button_counter >= 10)
 							{
-								save_user_params_batch();
+								if (user_params_differentiate)
+								{
+									save_user_params_batch();
+								}
 								sequence_turnDisplayOn(false);
 								mcp_off_button_counter = 0;
 							}
