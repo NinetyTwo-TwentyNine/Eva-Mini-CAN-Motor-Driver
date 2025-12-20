@@ -77,7 +77,7 @@ uint8_t mcp_off_button_counter = 0;
 uint64_t mcp_off_button_time = 0;
 
 // CAN
-uint8_t can_last_send_success = false;
+uint8_t can_last_send_success = false, can_should_stop_motor = false;
 uint64_t can_last_send_time = 0, can_test_initialization_time = 0;
 
 // UI/Logic
@@ -186,6 +186,7 @@ void setCurrentLogicState(Logic_State_Type new_state)
 				switch_to_start_menu_allowed = true;
 				break;
 			case LSTATE_NONE:
+				can_should_stop_motor = true;
 				break;
 		}
 	}
@@ -241,24 +242,28 @@ void sequence_turnDisplayOn(uint8_t on)
 	if (on)
 	{
 		LL_mDelay(1000);
-		gfx_clearBuffer();
 		
+		gfx_clearBuffer();
+		gfx_setTextSize(2);
+		gfx_setTextColor(WHITE, WHITE);
+		gfx_setCursor(46,24);
+		gfx_print("TTZ");
+		display_update();
+		LL_mDelay(1000);
+		
+		gfx_clearBuffer();
 		gfx_setTextSize(1);
 		gfx_setTextColor(WHITE, WHITE);
-		gfx_setCursor(0,0);
-		
-		for (uint16_t i=148; i < 294; i++) {
-			if (i == '\n') continue;
-			gfx_write(i);
-			if ((i > 0) && (i % 21 == 0))
-			{
-				gfx_println();
-			}
-		}
+		gfx_setCursor(16,20);
+		char converted_string[UI_ELEMENT_MAX_CHAR_COUNT] = {0};
+		utf8rus("Система контроля", converted_string);
+		gfx_print(converted_string);
+		gfx_setCursor(40,36);
+		gfx_print("Eva-Mini");
 		display_update();
-		gfx_clearBuffer();
+		LL_mDelay(1500);
 		
-		LL_mDelay(2000);
+		gfx_clearBuffer();
 		UI_BuildStartMenu(&main_screen);
 		display_buildUIScreen(&main_screen);
 		
@@ -543,10 +548,9 @@ int main(void)
 			{
 				if ((sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 				{
-					if (sys_timer - can_test_initialization_time >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
+					if ((sys_timer - can_test_initialization_time) >= (SECONDS_IN_MINUTE * MILLIS_IN_SECOND / MOTOR_DEFAULT_SPEED_EMPTY))
 					{
-						sendCANPackage(0, MOTOR_TURN_DIRECTION);
-						curr_logic_state = LSTATE_NONE;
+						setCurrentLogicState(LSTATE_NONE);
 					}
 					else
 					{
@@ -557,7 +561,12 @@ int main(void)
 			break;
 			case LSTATE_NONE:
 			{
-				if (sys_timer - can_test_initialization_time > 1 * MILLIS_IN_SECOND && sys_timer - can_last_send_time > 3 * MILLIS_IN_SECOND)
+				if (can_should_stop_motor && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
+				{
+					sendCANPackage(0, MOTOR_TURN_DIRECTION);
+					can_should_stop_motor = false;
+				}
+				else if ((sys_timer - can_test_initialization_time) > 1 * MILLIS_IN_SECOND && (sys_timer - can_last_send_time) > 3 * MILLIS_IN_SECOND)
 				{
 					switch_to_start_menu_allowed = true;
 				}

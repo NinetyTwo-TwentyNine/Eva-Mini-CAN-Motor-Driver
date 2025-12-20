@@ -1,34 +1,37 @@
 #include <ui_screen_main_menu.h>
 
-#define MM_ELEMENT_TEXT_COUNT 6
+#define MM_ELEMENT_TEXT_COUNT 7
 #define MM_POS_ERROR_ITEM 0
 #define MM_POS_QUOTA_ITEM 1
 #define MM_POS_FAN_ITEM 2
 #define MM_POS_MOTOR_ITEM 3
-#define MM_POS_AREA_ITEM 4
-#define MM_POS_SEEDER_ITEM 5
+#define MM_POS_SPEED_ITEM 4
+#define MM_POS_AREA_ITEM 5
+#define MM_POS_SEEDER_ITEM 6
 
-static const uint8_t error_item_id = 1, norm_item_id = 2, fan_item_id = 3, motor_item_id = 4, area_item_id = 5, seeder_item_id = 6;
-static char *texts[MM_ELEMENT_TEXT_COUNT] = { "", "Норма:", "В:", "М:", "S:", "Т" };
-static uint8_t text_xpos[MM_ELEMENT_TEXT_COUNT] = { 16, 4, 4, 4, 80, 115 };
-static uint8_t text_ypos[MM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52, 52, 36 };
-static uint8_t label_ids[MM_ELEMENT_TEXT_COUNT] = { error_item_id, norm_item_id, fan_item_id, motor_item_id, area_item_id, seeder_item_id };
+static const uint8_t error_item_id = 1, norm_item_id = 2, fan_item_id = 3, motor_item_id = 4, speed_item_id = 5, area_item_id = 6, seeder_item_id = 7;
+static char *texts[MM_ELEMENT_TEXT_COUNT] = { "", "Норма:", "В:", "М:", "С:", "S:", "Т" };
+static uint8_t text_xpos[MM_ELEMENT_TEXT_COUNT] = { 16, 4, 4, 4, 4, 80, 115 };
+static uint8_t text_ypos[MM_ELEMENT_TEXT_COUNT] = { 4, 16, 28, 40, 52, 52, 40 };
+static uint8_t label_ids[MM_ELEMENT_TEXT_COUNT] = { error_item_id, norm_item_id, fan_item_id, motor_item_id, speed_item_id, area_item_id, seeder_item_id };
 
 
-#define MM_ELEMENT_VAL_COUNT 4
+#define MM_ELEMENT_VAL_COUNT 5
 #define MM_POS_QUOTA_VAL 0
 #define MM_POS_FAN_VAL 1
 #define MM_POS_MOTOR_VAL 2
+#define MM_POS_SPEED_VAL 2
 #define MM_POS_AREA_VAL 3
 
-static uint32_t quota_val, fan_speed_val, motor_speed_val, area_session_val;
-static uint32_t* val_ptrs[MM_ELEMENT_VAL_COUNT] = { &quota_val, &fan_speed_val, &motor_speed_val, &area_session_val };
-static char *val_types[] = { "кг/га", "об/мин", "об/мин", "га" };
-static uint8_t val_allowed_lengths[MM_ELEMENT_VAL_COUNT] = { 3, 4, 3, 1 };
-static uint8_t val_xpos[MM_ELEMENT_VAL_COUNT] = { 42, 16, 16, 92 };
-static uint8_t val_ypos[MM_ELEMENT_VAL_COUNT] = { 20, 36, 52, 52 };
-static const uint8_t norm_val_id = 21, fan_val_id = 22, motor_val_id = 23, area_val_id = 24;
-static uint8_t val_ids[MM_ELEMENT_VAL_COUNT] = { norm_val_id, fan_val_id, motor_val_id, area_val_id };
+static uint32_t quota_val, fan_speed_val, motor_speed_val, speed_val, area_session_val;
+static uint32_t* val_ptrs[MM_ELEMENT_VAL_COUNT] = { &quota_val, &fan_speed_val, &motor_speed_val, &speed_val, &area_session_val };
+static char *val_types[] = { "кг/га", "об/мин", "об/мин", "км/ч", "га" };
+static uint8_t val_allowed_lengths[MM_ELEMENT_VAL_COUNT] = { 3, 4, 3, 3, 1 };
+static uint8_t val_lengths_after_dot[MM_ELEMENT_VAL_COUNT] = { 0, 0, 0, 1, 0 };
+static uint8_t val_xpos[MM_ELEMENT_VAL_COUNT] = { 42, 16, 16, 16, 92 };
+static uint8_t val_ypos[MM_ELEMENT_VAL_COUNT] = { 16, 28, 40, 52, 52 };
+static const uint8_t norm_val_id = 21, fan_val_id = 22, motor_val_id = 23, speed_val_id = 24, area_val_id = 25;
+static uint8_t val_ids[MM_ELEMENT_VAL_COUNT] = { norm_val_id, fan_val_id, motor_val_id, speed_val_id, area_val_id };
 
 
 #define MM_ELEMENT_ICON_COUNT 2
@@ -39,7 +42,7 @@ static uint8_t* bitmaps[MM_ELEMENT_ICON_COUNT] = {logo_ok_mark, logo_seeder_stat
 static uint8_t icon_width[MM_ELEMENT_ICON_COUNT] = {LOGO_OK_MARK_WIDTH, LOGO_SEEDER_STATE_WIDTH};
 static uint8_t icon_height[MM_ELEMENT_ICON_COUNT] = {LOGO_OK_MARK_HEIGHT, LOGO_SEEDER_STATE_HEIGHT};
 static uint8_t icon_xpos[MM_ELEMENT_ICON_COUNT] = { 4, 105 };
-static uint8_t icon_ypos[MM_ELEMENT_ICON_COUNT] = { 4, 36 };
+static uint8_t icon_ypos[MM_ELEMENT_ICON_COUNT] = { 2, 38 };
 static const uint8_t error_icon_id = 31, seeder_icon_id = 32;
 static uint8_t icon_ids[MM_ELEMENT_ICON_COUNT] = { error_icon_id, seeder_icon_id };
 
@@ -58,7 +61,7 @@ static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 {
 	if (!MMHelper_CheckValPosValidity(val_pos)) return;
 	
-	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
+	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos], length_after_dot = val_lengths_after_dot[val_pos];;
 	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
@@ -79,9 +82,18 @@ static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	}
 	else
 	{
-		utils_val_to_text_converter(final_string, length, 0, value, type, 0, false);
+		utils_val_to_text_converter(final_string, length, length_after_dot, value, type, 0, false);
 	}
 	ui_editText(e, final_string, e->data.text.font);
+}
+
+static void MMHelper_UpdateCurrentParams(UI_Screen* screen)
+{
+	quota_val = round(current_quota * (10^val_lengths_after_dot[MM_POS_QUOTA_VAL]));
+	fan_speed_val = round(current_fan_speed * (10^val_lengths_after_dot[MM_POS_FAN_VAL]));
+	motor_speed_val = round(current_actual_motor_speed * (10^val_lengths_after_dot[MM_POS_MOTOR_VAL]));
+	speed_val = round(current_seeder_speed * (10^val_lengths_after_dot[MM_POS_SPEED_VAL]));
+	area_session_val = floor(current_user_area_session * (10^val_lengths_after_dot[MM_POS_AREA_VAL]));
 }
 
 //==================================
@@ -90,10 +102,7 @@ static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void MainMenu_ScreenCallback(UI_Screen* screen)
 {
-	quota_val = round(current_quota);
-	motor_speed_val = round(current_actual_motor_speed);
-	area_session_val = floor(current_user_area_session);
-	fan_speed_val = round(current_fan_speed);
+	MMHelper_UpdateCurrentParams(screen);
 	
 	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
 	{
@@ -186,10 +195,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
     text_elem->id = label_ids[i];
 	}
 	
-	quota_val = round(current_quota);
-	fan_speed_val = round(current_fan_speed);
-	motor_speed_val = round(current_actual_motor_speed);
-	area_session_val = floor(current_user_area_session);
+	MMHelper_UpdateCurrentParams(screen);
 	
 	for (uint8_t i = 0; i < MM_ELEMENT_VAL_COUNT; i++)
 	{

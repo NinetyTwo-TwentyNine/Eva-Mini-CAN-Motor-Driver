@@ -182,7 +182,7 @@ extern float sensor_frequency[SENSOR_COUNT_MAX];
 // MCP23008
 #define MCP23008_ADDR 0x27
 #define MCP23008_I2C I2C2
-#define MCP23008_BUTTON_CHECK_TIME 175
+#define MCP23008_BUTTON_CHECK_TIME 170
 #define MCP23008_DEBOUNCE_WAIT_TIME 20
 
 #define MCP23008_BUTTON_ROW_COUNT 3
@@ -201,7 +201,7 @@ extern uint64_t mcp23_last_check_time;
 // CAN
 #define CAN_TRANSMISSION_INTERVAL 100
 
-extern uint8_t can_last_send_success;
+extern uint8_t can_last_send_success, can_should_stop_motor;
 extern uint64_t can_last_send_time, can_test_initialization_time;
 
 // UI/Logic

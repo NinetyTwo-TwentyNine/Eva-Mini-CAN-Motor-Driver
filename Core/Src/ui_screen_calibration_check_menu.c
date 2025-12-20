@@ -98,7 +98,7 @@ static void CCMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 {
 	if (!CCMHelper_CheckValPosValidity(val_pos)) return;
 				
-	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
+	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos], length_after_dot = val_lengths_after_dot[val_pos];
 	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
@@ -121,7 +121,7 @@ static void CCMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	}
 	else
 	{
-		utils_val_to_text_converter(final_string, length, val_lengths_after_dot[val_pos], value, type, selected_slot, selected_slot_gone);
+		utils_val_to_text_converter(final_string, length, length_after_dot, value, type, selected_slot, selected_slot_gone);
 	}
 	
 	ui_editText(e, final_string, e->data.text.font);
@@ -331,7 +331,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 					for (uint8_t i = 0; i < val_lengths_after_dot[CCM_POS_DEVIATION_VAL]; i++)
 						deviation_scaler *= 10;
 					new_mass_val = round( (float)actual_mass_val / (current_can_motor_speed * (float)total_motor_movement_time / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
-					deviation_percent_val = round( (float)(abs((int32_t)new_mass_val - (int32_t)mass_per_turn_val)) * (float)deviation_scaler * 100 / (float)mass_per_turn_val );
+					deviation_percent_val = round( ((float)abs((int32_t)new_mass_val - (int32_t)mass_per_turn_val)) * (float)deviation_scaler * 100 / (float)mass_per_turn_val );
 					
 					CCMHelper_SetElementFunctionality(screen, CCM_POS_BEGIN_CHECK, 0, 0);
 					
