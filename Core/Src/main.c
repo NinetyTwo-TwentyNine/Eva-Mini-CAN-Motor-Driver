@@ -54,9 +54,9 @@ float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 uint64_t sensor_last_check_time[SENSOR_COUNT_MAX] = {0};
 
 SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX] = {
+	&(SENSADDR_TIM_TypeDef){TIM1, 3},
+	&(SENSADDR_TIM_TypeDef){TIM1, 4},
 	&(SENSADDR_TIM_TypeDef){TIM2, 3},
-	&(SENSADDR_TIM_TypeDef){TIM2, 2},
-	&(SENSADDR_TIM_TypeDef){TIM2, 1},
 	NULL,
 	NULL
 };
@@ -92,7 +92,6 @@ uint64_t main_logic_last_tick_time = 0;
 uint8_t user_params_differentiate = false;
 uint32_t user_params_array[USER_PARAMS_COUNT] = {0};
 uint64_t user_params_last_save_time = 0;
-float current_user_area_total = 0, current_user_area_session = 0;
 
 uint8_t current_state_seeder_down = false, current_state_bunker_full = false;
 float current_can_motor_speed = 0, current_actual_motor_speed = 0, current_fan_speed = 0, current_seeder_speed = 0, current_quota = 0;
@@ -186,7 +185,7 @@ void setCurrentLogicState(Logic_State_Type new_state)
 				switch_to_start_menu_allowed = true;
 				break;
 			case LSTATE_NONE:
-				can_should_stop_motor = true;
+				can_should_stop_motor = (current_can_motor_speed != 0);
 				break;
 		}
 	}
@@ -437,11 +436,12 @@ int main(void)
 				{
 					main_logic_last_tick_time = sys_timer;
 					
-					uint32_t user_wheel_diameter = getUserParameter(USER_PARAM_WHEEL_DIAMETER), user_wheel_pulses = getUserParameter(USER_PARAM_WHEEL_PULSES),
-									 user_speed_min = getUserParameter(USER_PARAM_SPEED_MIN), user_speed_max = getUserParameter(USER_PARAM_SPEED_MAX),
-									 user_fan_speed_min = getUserParameter(USER_PARAM_FAN_SPEED_MIN), user_fan_speed_max = getUserParameter(USER_PARAM_FAN_SPEED_MAX),
-									 user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameter(USER_PARAM_QUOTA),
-									 user_mass_per_turn = getUserParameter(USER_PARAM_MASS_PER_TURN);
+					float user_speed_min = getUserParameterFloat(USER_PARAM_SPEED_MIN), user_speed_max = getUserParameterFloat(USER_PARAM_SPEED_MAX),
+								current_user_area_session = getUserParameterFloat(USER_PARAM_AREA_SESSION), current_user_area_total = getUserParameterFloat(USER_PARAM_AREA_TOTAL);
+					uint32_t user_wheel_diameter = getUserParameterInt(USER_PARAM_WHEEL_DIAMETER), user_wheel_pulses = getUserParameterInt(USER_PARAM_WHEEL_PULSES),
+									 user_fan_speed_min = getUserParameterInt(USER_PARAM_FAN_SPEED_MIN), user_fan_speed_max = getUserParameterInt(USER_PARAM_FAN_SPEED_MAX),
+									 user_seeder_width = getUserParameterInt(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameterInt(USER_PARAM_QUOTA),
+									 user_mass_per_turn = getUserParameterInt(USER_PARAM_MASS_PER_TURN);
 					
 					
 					SENSADDR_GPIO_TypeDef *seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER], *bunker_sensor_addr = sensor_address_gpio[SENSADDR_POS_BUNKER];
@@ -481,7 +481,7 @@ int main(void)
 					}
 					
 					// Main logic (if the setup was completed)
-					if (checkIfAllUserParamsAreSet())
+					if (checkIfSeederParamsAreSet() && checkIfOtherParamsAreSet())
 					{
 						updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_EMPTY, !current_state_bunker_full);
 						
@@ -524,12 +524,10 @@ int main(void)
 								area_addition *= current_quota / (float)user_quota;
 							}
 							
-							current_user_area_total += area_addition;
-							current_user_area_session += area_addition;
-							
 							if (area_addition != 0)
 							{
-								user_params_differentiate = true;
+								setUserParameterFloat(USER_PARAM_AREA_TOTAL, current_user_area_total + area_addition);
+								setUserParameterFloat(USER_PARAM_AREA_SESSION, current_user_area_session + area_addition);
 							}
 						}
 					}
@@ -563,6 +561,7 @@ int main(void)
 			{
 				if (can_should_stop_motor && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 				{
+					current_can_motor_speed = 0;
 					sendCANPackage(0, MOTOR_TURN_DIRECTION);
 					can_should_stop_motor = false;
 				}

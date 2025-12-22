@@ -20,14 +20,14 @@ static uint8_t label_ids[MM_ELEMENT_TEXT_COUNT] = { error_item_id, norm_item_id,
 #define MM_POS_QUOTA_VAL 0
 #define MM_POS_FAN_VAL 1
 #define MM_POS_MOTOR_VAL 2
-#define MM_POS_SPEED_VAL 2
-#define MM_POS_AREA_VAL 3
+#define MM_POS_SPEED_VAL 3
+#define MM_POS_AREA_VAL 4
 
 static uint32_t quota_val, fan_speed_val, motor_speed_val, speed_val, area_session_val;
 static uint32_t* val_ptrs[MM_ELEMENT_VAL_COUNT] = { &quota_val, &fan_speed_val, &motor_speed_val, &speed_val, &area_session_val };
 static char *val_types[] = { "кг/га", "об/мин", "об/мин", "км/ч", "га" };
-static uint8_t val_allowed_lengths[MM_ELEMENT_VAL_COUNT] = { 3, 4, 3, 3, 1 };
-static uint8_t val_lengths_after_dot[MM_ELEMENT_VAL_COUNT] = { 0, 0, 0, 1, 0 };
+static uint8_t val_allowed_lengths[MM_ELEMENT_VAL_COUNT] = { 3, 4, 3, 3, 2 };
+static uint8_t val_lengths_after_dot[MM_ELEMENT_VAL_COUNT] = { 0, 0, 0, 1, 1 };
 static uint8_t val_xpos[MM_ELEMENT_VAL_COUNT] = { 42, 16, 16, 16, 92 };
 static uint8_t val_ypos[MM_ELEMENT_VAL_COUNT] = { 16, 28, 40, 52, 52 };
 static const uint8_t norm_val_id = 21, fan_val_id = 22, motor_val_id = 23, speed_val_id = 24, area_val_id = 25;
@@ -74,7 +74,7 @@ static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 		char actual_val_string[UI_ELEMENT_MAX_CHAR_COUNT / 2] = "";
 		char theoretical_val_string[UI_ELEMENT_MAX_CHAR_COUNT / 2] = "";
 		utils_val_to_text_converter(actual_val_string, length, 0, value, "", 0, false);
-		utils_val_to_text_converter(theoretical_val_string, length, 0, getUserParameter(USER_PARAM_QUOTA), "", 0, false);
+		utils_val_to_text_converter(theoretical_val_string, length, 0, getUserParameterInt(USER_PARAM_QUOTA), "", 0, false);
 		
 		strcat(final_string, actual_val_string);
 		strcat(final_string, "("); strcat(final_string, theoretical_val_string); strcat(final_string, ")");
@@ -89,11 +89,11 @@ static void MMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void MMHelper_UpdateCurrentParams(UI_Screen* screen)
 {
-	quota_val = round(current_quota * (10^val_lengths_after_dot[MM_POS_QUOTA_VAL]));
-	fan_speed_val = round(current_fan_speed * (10^val_lengths_after_dot[MM_POS_FAN_VAL]));
-	motor_speed_val = round(current_actual_motor_speed * (10^val_lengths_after_dot[MM_POS_MOTOR_VAL]));
-	speed_val = round(current_seeder_speed * (10^val_lengths_after_dot[MM_POS_SPEED_VAL]));
-	area_session_val = floor(current_user_area_session * (10^val_lengths_after_dot[MM_POS_AREA_VAL]));
+	quota_val = round(current_quota * getPow10(val_lengths_after_dot[MM_POS_QUOTA_VAL]));
+	fan_speed_val = round(current_fan_speed * getPow10(val_lengths_after_dot[MM_POS_FAN_VAL]));
+	motor_speed_val = round(current_actual_motor_speed * getPow10(val_lengths_after_dot[MM_POS_MOTOR_VAL]));
+	speed_val = round(current_seeder_speed * getPow10(val_lengths_after_dot[MM_POS_SPEED_VAL]));
+	area_session_val = floor(getUserParameterFloat(USER_PARAM_AREA_SESSION) * getPow10(val_lengths_after_dot[MM_POS_AREA_VAL]));
 }
 
 //==================================
@@ -140,7 +140,7 @@ static void MainMenu_ScreenCallback(UI_Screen* screen)
 				default: ui_editText(text, "Есть ошибки", 0);
 			}
 		}
-		else if (!checkIfAllUserParamsAreSet())
+		else if (!checkIfSeederParamsAreSet() || !checkIfOtherParamsAreSet())
 		{
 			ui_editBitmap(bitmap, LOGO_QUESTION_MARK_WIDTH, LOGO_QUESTION_MARK_HEIGHT, logo_question_mark);
 			ui_editText(text, "Настройки", 0);

@@ -17,7 +17,7 @@
 static char* labels[CM_ELEMENT_TEXT_COUNT] = { "Ширина:", "Норма:", "Заполнить катушки", "Время:", "Об.мотора:", "Начать калибровку", "Масса:", "Рассчитать массу", "Масса:", "MIN:", "MAX:", "назад" };
 static uint8_t text_xpos[CM_ELEMENT_TEXT_COUNT] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 static uint8_t text_ypos[CM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52, 68, 84, 100, 116, 132, 148, 164, 180 };
-static uint8_t text_offset_scalers[CM_ELEMENT_TEXT_COUNT] = { 3, 8, 0, 8, 4, 0, 7, 0, 10, 6, 6, 0 };
+static uint8_t text_offset_scalers[CM_ELEMENT_TEXT_COUNT] = { 3, 8, 0, 8, 4, 0, 7, 0, 10, 9, 9, 0 };
 static const uint8_t width_item_id = 1, quota_item_id = 2, fill_motor_id = 3, time_item_id = 4, spins_item_id = 5, begin_calibration_id = 6, mass_item_id = 7, count_params_id = 8, counted_mass_item_id = 9, min_speed_item_id = 10, max_speed_item_id = 11, back_id = 12;
 static uint8_t label_ids[CM_ELEMENT_TEXT_COUNT] = { width_item_id, quota_item_id, fill_motor_id, time_item_id, spins_item_id, begin_calibration_id, mass_item_id, count_params_id, counted_mass_item_id, min_speed_item_id, max_speed_item_id, back_id };
 static uint8_t label_tab_ids[CM_ELEMENT_TEXT_COUNT] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
@@ -38,7 +38,8 @@ static uint32_t* val_ptrs[CM_ELEMENT_VAL_COUNT] = { &width_val, &quota_val, &tim
 static char* val_types[CM_ELEMENT_VAL_COUNT] = { "м", "кг/га", "мин", "с", "об", "кг", "кг/об", "км/ч", "км/ч" };
 static uint8_t val_xpos[CM_ELEMENT_VAL_COUNT] = { 46, 40, 40, 70, 64, 40, 40, 28, 28 };
 static uint8_t val_ypos[CM_ELEMENT_VAL_COUNT] = { 4, 20, 52, 52, 68, 100, 132, 148, 164 };
-static uint8_t val_allowed_lengths[CM_ELEMENT_VAL_COUNT] = { 2, 3, 2, 2, 2, 4, 4, 2, 2 };
+static uint8_t val_allowed_lengths[CM_ELEMENT_VAL_COUNT] = { 2, 3, 2, 2, 2, 4, 4, 4, 4 };
+static uint8_t val_lengths_after_dot[CM_ELEMENT_VAL_COUNT] = { 0, 0, 0, 0, 0, 3, 3, 2, 2 };
 static const uint8_t width_val_id = 21, quota_val_id = 22, time_min_val_id = 23, time_sec_val_id = 24, spins_val_id = 25, mass_val_id = 26, counted_mass_val_id = 27, counted_min_speed_val_id = 28, counted_max_speed_val_id = 29;
 static uint8_t val_ids[CM_ELEMENT_VAL_COUNT] = { width_val_id, quota_val_id, time_min_val_id, time_sec_val_id, spins_val_id, mass_val_id, counted_mass_val_id, counted_min_speed_val_id, counted_max_speed_val_id };
 
@@ -95,7 +96,7 @@ static void CMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 {
 	if (!CMHelper_CheckValPosValidity(val_pos)) return;
 	
-	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
+	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos], length_after_dot = val_lengths_after_dot[val_pos];
 	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
@@ -103,7 +104,7 @@ static void CMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (e == NULL || e->type != VISUAL_TYPE_TEXT) return;
 	
 	char final_string[UI_ELEMENT_MAX_CHAR_COUNT] = "";
-	utils_val_to_text_converter(final_string, length, 3, value, type, selected_slot, selected_slot_gone);
+	utils_val_to_text_converter(final_string, length, length_after_dot, value, type, selected_slot, selected_slot_gone);
 	ui_editText(e, final_string, e->data.text.font);
 }
 
@@ -296,22 +297,28 @@ static void CalibrationMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Pre
 				case count_params_id:
 				{
 					counted_mass_val = round( (float)mass_val / ((float)spins_val * ((float)total_motor_movement_time / MILLIS_IN_SECOND) / (float)initial_time_total) );
-					counted_min_speed_val = calculateMinMotorSpeed(quota_val, width_val, counted_mass_val);
-					counted_max_speed_val = calculateMaxMotorSpeed(quota_val, width_val, counted_mass_val);
+					float min_speed_val = calculateMinSpeed_fromMotorSpeed(quota_val, width_val, counted_mass_val), max_speed_val = calculateMaxSpeed_fromMotorSpeed(quota_val, width_val, counted_mass_val);
+					if (max_speed_val <= min_speed_val)
+					{
+						min_speed_val = 0;
+						max_speed_val = 0;
+					}
+					counted_min_speed_val = round(min_speed_val * getPow10(val_lengths_after_dot[CM_POS_COUNTED_MIN_SPEED_VAL]));
+					counted_max_speed_val = round(max_speed_val * getPow10(val_lengths_after_dot[CM_POS_COUNTED_MAX_SPEED_VAL]));
 					
-					setUserParameter(USER_PARAM_MASS_PER_TURN, counted_mass_val);
-					setUserParameter(USER_PARAM_SPEED_MIN, counted_min_speed_val);
-					setUserParameter(USER_PARAM_SPEED_MAX, counted_max_speed_val);
+					setUserParameterInt(USER_PARAM_MASS_PER_TURN, counted_mass_val);
+					setUserParameterFloat(USER_PARAM_SPEED_MIN, min_speed_val);
+					setUserParameterFloat(USER_PARAM_SPEED_MAX, max_speed_val);
 					
 					CMHelper_SetElementFunctionality(screen, CM_POS_BEGIN_CALIBRATION, 0, 0);
 					
-					CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MASS_VAL);
-					CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MIN_SPEED_VAL);
-					CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MAX_SPEED_VAL);
 					
-					CMHelper_SetElementFunctionality(screen, CM_POS_COUNTED_MASS_ITEM, 1, 0);
-					CMHelper_SetElementFunctionality(screen, CM_POS_MIN_SPEED_ITEM, 1, 0);
-					CMHelper_SetElementFunctionality(screen, CM_POS_MAX_SPEED_ITEM, 1, 0);
+					uint8_t text_items_array[] = {CM_POS_COUNTED_MASS_ITEM, CM_POS_MIN_SPEED_ITEM, CM_POS_MAX_SPEED_ITEM, CM_POS_COUNTED_MASS_VAL, CM_POS_COUNTED_MIN_SPEED_VAL, CM_POS_COUNTED_MAX_SPEED_VAL};
+					for (uint8_t i = 0; i < sizeof(text_items_array)/2; i++)
+					{
+						CMHelper_ConvertValToText(screen, text_items_array[sizeof(text_items_array)/2 + i]);
+						CMHelper_SetElementFunctionality(screen, text_items_array[i], 1, 0);
+					}
 					
 					ui_update_required = true;
 					break;
@@ -391,28 +398,30 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 				{
 					case width_item_id: case quota_item_id:
 					{
-						if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH) || quota_val != getUserParameter(USER_PARAM_QUOTA))
+						if (width_val != getUserParameterInt(USER_PARAM_SEEDER_WIDTH) || quota_val != getUserParameterInt(USER_PARAM_QUOTA))
 						{
 							counted_mass_val = 0;
 							counted_min_speed_val = 0;
 							counted_max_speed_val = 0;
 							
-							setUserParameter(USER_PARAM_MASS_PER_TURN, counted_mass_val);
-							setUserParameter(USER_PARAM_SPEED_MIN, counted_min_speed_val);
-							setUserParameter(USER_PARAM_SPEED_MAX, counted_max_speed_val);
+							setUserParameterInt(USER_PARAM_MASS_PER_TURN, 0);
+							setUserParameterFloat(USER_PARAM_SPEED_MIN, 0);
+							setUserParameterFloat(USER_PARAM_SPEED_MAX, 0);
 							
-							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MASS_VAL);
-							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MIN_SPEED_VAL);
-							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MAX_SPEED_VAL);
-							
-							if (width_val != getUserParameter(USER_PARAM_SEEDER_WIDTH))
+							uint8_t text_items_array[] = {CM_POS_COUNTED_MASS_VAL, CM_POS_COUNTED_MIN_SPEED_VAL, CM_POS_COUNTED_MAX_SPEED_VAL};
+							for (uint8_t i = 0; i < sizeof(text_items_array); i++)
 							{
-								current_user_area_session = 0;
+								CMHelper_ConvertValToText(screen, text_items_array[i]);
+							}
+							
+							if (width_val != getUserParameterInt(USER_PARAM_SEEDER_WIDTH))
+							{
+								setUserParameterFloat(USER_PARAM_AREA_SESSION, 0.0);
 							}
 						}
 						
-						setUserParameter(USER_PARAM_SEEDER_WIDTH, width_val);
-						setUserParameter(USER_PARAM_QUOTA, quota_val);
+						setUserParameterInt(USER_PARAM_SEEDER_WIDTH, width_val);
+						setUserParameterInt(USER_PARAM_QUOTA, quota_val);
 						
 						if (width_val != 0 && quota_val != 0)
 						{
@@ -502,12 +511,12 @@ void UI_BuildCalibrationMenu(UI_Screen* screen)
   {
 		*val_ptrs[i] = 0;
 	}
-	counted_mass_val = getUserParameter(USER_PARAM_MASS_PER_TURN);
-	counted_min_speed_val = getUserParameter(USER_PARAM_SPEED_MIN);
-	counted_max_speed_val = getUserParameter(USER_PARAM_SPEED_MAX);
+	counted_mass_val = getUserParameterInt(USER_PARAM_MASS_PER_TURN);
+	counted_min_speed_val = round(getUserParameterFloat(USER_PARAM_SPEED_MIN) * getPow10(val_lengths_after_dot[CM_POS_COUNTED_MIN_SPEED_VAL]));
+	counted_max_speed_val = round(getUserParameterFloat(USER_PARAM_SPEED_MAX) * getPow10(val_lengths_after_dot[CM_POS_COUNTED_MAX_SPEED_VAL]));
 	
-	width_val = getUserParameter(USER_PARAM_SEEDER_WIDTH);
-	quota_val = getUserParameter(USER_PARAM_QUOTA);
+	width_val = getUserParameterInt(USER_PARAM_SEEDER_WIDTH);
+	quota_val = getUserParameterInt(USER_PARAM_QUOTA);
 	if (width_val != 0 && quota_val != 0)
 	{
 		CMHelper_SetElementFunctionality(screen, CM_POS_FILL_MOTOR, 1, 1);

@@ -176,12 +176,12 @@ static void SpeedSensorMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 				{
 					case diameter_item_id:
 					{
-						setUserParameter(USER_PARAM_WHEEL_DIAMETER, diameter_val);
+						setUserParameterInt(USER_PARAM_WHEEL_DIAMETER, diameter_val);
 						break;
 					}
 					case pulses_item_id:
 					{
-						setUserParameter(USER_PARAM_WHEEL_PULSES, pulses_val);
+						setUserParameterInt(USER_PARAM_WHEEL_PULSES, pulses_val);
 						break;
 					}
 				}
@@ -237,8 +237,8 @@ void UI_BuildSpeedSensorMenu(UI_Screen* screen)
   {
 		*val_ptrs[i] = 0;
 	}
-	diameter_val = getUserParameter(USER_PARAM_WHEEL_DIAMETER);
-	pulses_val = getUserParameter(USER_PARAM_WHEEL_PULSES);
+	diameter_val = getUserParameterInt(USER_PARAM_WHEEL_DIAMETER);
+	pulses_val = getUserParameterInt(USER_PARAM_WHEEL_PULSES);
 	
   for (uint8_t i = 0; i < SSM_ELEMENT_VAL_COUNT; i++)
   {

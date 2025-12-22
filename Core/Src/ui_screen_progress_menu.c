@@ -10,7 +10,7 @@ static char *labels[PM_ELEMENT_TEXT_COUNT] = { "Наработка:", "", "За 
 static const uint8_t screen_label_id = 1, total_area_id = 2, session_area_id = 3, back_id = 4;
 static uint8_t xpos[PM_ELEMENT_TEXT_COUNT] = { 8, 8, 8, 8 };
 static uint8_t ypos[PM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52 };
-static uint8_t text_offset_scalers[PM_ELEMENT_TEXT_COUNT] = { 0, 7, 6, 0 };
+static uint8_t text_offset_scalers[PM_ELEMENT_TEXT_COUNT] = { 0, 8, 8, 0 };
 static uint8_t label_ids[PM_ELEMENT_TEXT_COUNT] = { screen_label_id, total_area_id, session_area_id, back_id };
 static uint8_t label_tab_ids[PM_ELEMENT_TEXT_COUNT] = { 0, 2, 3, 4 };
 
@@ -23,7 +23,8 @@ static uint32_t* val_ptrs[PM_ELEMENT_VAL_COUNT] = { &area_total_val, &area_sessi
 static char* val_types[PM_ELEMENT_VAL_COUNT] = { "га", "га" };
 static uint8_t val_xpos[PM_ELEMENT_VAL_COUNT] = { 8, 62 };
 static uint8_t val_ypos[PM_ELEMENT_VAL_COUNT] = { 20, 36 };
-static uint8_t val_allowed_lengths[PM_ELEMENT_VAL_COUNT] = { 5, 4 };
+static uint8_t val_allowed_lengths[PM_ELEMENT_VAL_COUNT] = { 4, 4 };
+static uint8_t val_lengths_after_dot[PM_ELEMENT_VAL_COUNT] = { 1, 2 };
 static const uint8_t total_area_val_id = 21, session_area_val_id = 22;
 static uint8_t val_ids[PM_ELEMENT_VAL_COUNT] = { total_area_val_id, session_area_val_id };
 
@@ -42,7 +43,7 @@ static void PMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 {
 	if (!PMHelper_CheckValPosValidity(val_pos)) return;
 	
-	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos];
+	uint8_t val_id = val_ids[val_pos], length = val_allowed_lengths[val_pos], length_after_dot = val_lengths_after_dot[val_pos];
 	uint32_t value = *val_ptrs[val_pos];
 	char* type = val_types[val_pos];
 	
@@ -50,9 +51,7 @@ static void PMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 	if (e == NULL || e->type != VISUAL_TYPE_TEXT) return;
 	
 	char final_string[UI_ELEMENT_MAX_CHAR_COUNT] = "";
-	sprintf(final_string, "%d", value);
-	strcat(final_string, type);
-	//utils_val_to_text_converter(final_string, length, 0, value, type, 0, false);
+	utils_val_to_text_converter(final_string, length, length_after_dot, value, type, 0, false);
 	ui_editText(e, final_string, e->data.text.font);
 }
 
@@ -62,8 +61,8 @@ static void PMHelper_ConvertValToText(UI_Screen* screen, uint8_t val_pos)
 
 static void ProgressMenu_ScreenCallback(UI_Screen* screen)
 {
-	area_total_val = floor(current_user_area_total);
-	area_session_val = floor(current_user_area_session);
+	area_total_val = floor(getUserParameterFloat(USER_PARAM_AREA_TOTAL) * getPow10(val_lengths_after_dot[PM_POS_AREA_TOTAL_VAL]));
+	area_session_val = floor(getUserParameterFloat(USER_PARAM_AREA_SESSION) * getPow10(val_lengths_after_dot[PM_POS_AREA_SESSION_VAL]));
 	
 	PMHelper_ConvertValToText(screen, PM_POS_AREA_TOTAL_VAL);
 	PMHelper_ConvertValToText(screen, PM_POS_AREA_SESSION_VAL);
@@ -83,11 +82,7 @@ static void ProgressMenu_OnItemPressed_Main(UI_Screen* screen, UI_Element_Press_
 			{
 				case session_area_id:
 				{
-					if (current_user_area_session != 0)
-					{
-						user_params_differentiate = true;
-					}
-					current_user_area_session = 0;
+					setUserParameterFloat(USER_PARAM_AREA_SESSION, 0);
 					
 					PMHelper_ConvertValToText(screen, PM_POS_AREA_SESSION_VAL);
 	
@@ -135,8 +130,8 @@ void UI_BuildProgressMenu(UI_Screen* screen)
 		);
   }
 	
-	area_total_val = floor(current_user_area_total);
-	area_session_val = floor(current_user_area_session);
+	area_total_val = floor(getUserParameterFloat(USER_PARAM_AREA_TOTAL) * getPow10(val_lengths_after_dot[PM_POS_AREA_TOTAL_VAL]));
+	area_session_val = floor(getUserParameterFloat(USER_PARAM_AREA_SESSION) * getPow10(val_lengths_after_dot[PM_POS_AREA_SESSION_VAL]));
 	
   for (uint8_t i = 0; i < PM_ELEMENT_VAL_COUNT; i++)
   {

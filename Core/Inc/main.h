@@ -149,8 +149,8 @@ extern volatile uint8_t IC_Array8[4][SENSOR_COUNT_MAX];
 #define SENSADDR_POS_SEEDER 3
 #define SENSADDR_POS_BUNKER 4
 
-#define SENSADDR_MASK_TIMS ((1 << SENSADDR_POS_FAN) + (1 << SENSADDR_POS_MOTOR) + (1 << SENSADDR_POS_SPEED))
-#define SENSADDR_MASK_GPIOS ((1 << SENSADDR_POS_SEEDER) + (1 << SENSADDR_POS_BUNKER))
+#define SENSADDR_MASK_TIMS ((1 << SENSADDR_POS_FAN) | (1 << SENSADDR_POS_MOTOR) | (1 << SENSADDR_POS_SPEED))
+#define SENSADDR_MASK_GPIOS ((1 << SENSADDR_POS_SEEDER) | (1 << SENSADDR_POS_BUNKER))
 
 extern SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX];
 extern SENSADDR_GPIO_TypeDef* sensor_address_gpio[SENSOR_COUNT_MAX];
@@ -225,6 +225,7 @@ extern uint64_t ui_last_update_time, ui_last_callback_time;
 #define MOTOR_TURN_DIRECTION 0x00
 
 #define SENSOR_VALUE_FAN_MIN_RANGE 20
+#define SENSOR_VALUE_SPEED_BORDER_MIN 0.5
 #define SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION 10
 #define SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION 3
 #define SENSOR_VALUE_LOST_TIME 1500
@@ -248,7 +249,7 @@ extern uint64_t main_logic_last_tick_time;
 void setCurrentLogicState(Logic_State_Type new_state);
 
 
-#define USER_PARAMS_COUNT 9
+#define USER_PARAMS_COUNT 11
 #define USER_PARAM_SPEED_MIN 0
 #define USER_PARAM_SPEED_MAX 1
 #define USER_PARAM_FAN_SPEED_MIN 2
@@ -258,15 +259,18 @@ void setCurrentLogicState(Logic_State_Type new_state);
 #define USER_PARAM_SEEDER_WIDTH 6
 #define USER_PARAM_QUOTA 7
 #define USER_PARAM_MASS_PER_TURN 8
+#define USER_PARAM_AREA_SESSION 9
+#define USER_PARAM_AREA_TOTAL 10
+
+#define USER_PARAMS_FLOAT_MASK ((1 << USER_PARAM_SPEED_MIN) | (1 << USER_PARAM_SPEED_MAX) | (1 << USER_PARAM_AREA_SESSION) | (1 << USER_PARAM_AREA_TOTAL))
 
 #define USER_DATA_SAVE_PAGE_ADDR 0x0800FC00
-#define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 3)*4)
+#define USER_DATA_SAVE_SIZE ((USER_PARAMS_COUNT + 1)*4)
 #define USER_DATA_SAVE_INTERAVAL 600000 // 10 minutes
 
 extern uint8_t user_params_differentiate;
 extern uint32_t user_params_array[USER_PARAMS_COUNT];
 extern uint64_t user_params_last_save_time;
-extern float current_user_area_total, current_user_area_session;
 
 extern uint8_t current_state_seeder_down, current_state_bunker_full;
 extern float current_can_motor_speed, current_actual_motor_speed, current_fan_speed, current_seeder_speed, current_quota;

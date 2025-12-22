@@ -21,24 +21,24 @@
 #define SAVE_POS_FLAG (USER_DATA_SAVE_SIZE/2 - 1)
 #define SAVE_POS_CRC (USER_DATA_SAVE_SIZE/2 - 2)
 
-#define SAVE_PARAMS_COUNT (USER_PARAMS_COUNT + 2)
 #define SAVE_SLOTS_COUNT (1024/USER_DATA_SAVE_SIZE)
-
-#define SAVE_POS_TOTAL_AREA (SAVE_PARAMS_COUNT - 2)
-#define SAVE_POS_SESSION_AREA (SAVE_PARAMS_COUNT - 1)
 
 #define SAVE_FLAG_SLOT_EMPTY 0xFFFF
 #define SAVE_FLAG_SLOT_VALID 0x0000
 
 #define CRC_CALC_BGN 0xFFFF
-#define CRC_CALC_PWR 0x1021
+#define CRC_CALC_XOR 0x1021
 
 
-void setUserParameter(uint8_t pos, uint32_t parameter);
-uint32_t getUserParameter(uint8_t pos);
-uint8_t checkIfAllUserParamsAreSet(void);
+uint8_t setUserParameterInt(uint8_t pos, uint32_t parameter);
+uint8_t setUserParameterFloat(uint8_t pos, float parameter);
+uint32_t getUserParameterInt(uint8_t pos);
+float getUserParameterFloat(uint8_t pos);
+uint8_t checkIfSeederParamsAreSet(void);
+uint8_t checkIfOtherParamsAreSet(void);
 
 
+uint32_t getPow10(uint8_t pwr);
 uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder_width_m, uint8_t area_divider);
 float calculateSeederSpeed_fromSensorOutput(uint32_t wheel_diameter_dm, uint32_t pulses_per_wheel_count, float sensor_frequency_hz);
 float calculateMotorSpeed_fromTime(uint32_t quota_kg_per_ha, uint8_t area_divider, uint32_t mass_per_turn_g, uint32_t time_total_millis);
@@ -47,8 +47,8 @@ float calculateQuota_fromSpeed(uint32_t seeder_width_m, float seeder_speed_kmh, 
 float calculateAreaAddition_fromSpeed(float begin_speed_kmh, float end_speed_kmh, uint32_t time_millis, uint32_t seeder_width_m);
 
 uint8_t performMotorSpeedCheck(float motor_speed);
-uint32_t calculateMinMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g);
-uint32_t calculateMaxMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g);
+float calculateMinSpeed_fromMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g);
+float calculateMaxSpeed_fromMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g);
 
 
 void save_user_params_batch(void);

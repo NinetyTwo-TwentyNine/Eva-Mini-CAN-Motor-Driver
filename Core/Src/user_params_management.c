@@ -4,35 +4,84 @@
 // Parameter management
 // ======================
 
-void setUserParameter(uint8_t pos, uint32_t parameter)
+uint8_t setUserParameterInt(uint8_t pos, uint32_t parameter)
 {
+	if (USER_PARAMS_FLOAT_MASK & (1 << pos)) return 0;
+	
 	if (user_params_array[pos] != parameter)
 	{
 		user_params_differentiate = true;
 	}
 	user_params_array[pos] = parameter;
+	return 1;
 }
 
-uint32_t getUserParameter(uint8_t pos)
+uint8_t setUserParameterFloat(uint8_t pos, float parameter)
 {
+	if (!(USER_PARAMS_FLOAT_MASK & (1 << pos))) return 0;
+	
+	float old_param;
+	memcpy(&old_param, &user_params_array[pos], sizeof(old_param));
+	
+	if (parameter != old_param)
+	{
+		user_params_differentiate = true;
+	}
+	memcpy(&user_params_array[pos], &parameter, sizeof(user_params_array[pos]));
+	return 1;
+}
+
+uint32_t getUserParameterInt(uint8_t pos)
+{
+	if (USER_PARAMS_FLOAT_MASK & (1 << pos)) return 0;
+	
 	return user_params_array[pos];
 }
 
-uint8_t checkIfAllUserParamsAreSet()
+float getUserParameterFloat(uint8_t pos)
 {
-	uint32_t check_sum = 0;
-	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
-	{
-		if (i == USER_PARAM_FAN_SPEED_MIN || i == USER_PARAM_FAN_SPEED_MIN) continue; // allow minimums to be zero
-		check_sum |= (user_params_array[i] == 0) << i;
-	}
-	return (check_sum == 0);
+	if (!(USER_PARAMS_FLOAT_MASK & (1 << pos))) return 0;
+	
+	float user_param;
+	memcpy(&user_param, &user_params_array[pos], sizeof(user_param));
+	return user_param;
+}
+
+uint8_t checkIfSeederParamsAreSet()
+{
+	float user_speed_min = getUserParameterFloat(USER_PARAM_SPEED_MIN),
+				user_speed_max = getUserParameterFloat(USER_PARAM_SPEED_MAX);
+	uint32_t user_mass_per_turn = getUserParameterInt(USER_PARAM_MASS_PER_TURN),
+					 user_quota = getUserParameterInt(USER_PARAM_MASS_PER_TURN),
+					 user_seeder_width = getUserParameterInt(USER_PARAM_SEEDER_WIDTH);
+	
+	uint8_t seeder_options_check = (user_speed_min >= SENSOR_VALUE_SPEED_BORDER_MIN && user_speed_max > user_speed_min && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0);
+	return seeder_options_check;
+}
+
+uint8_t checkIfOtherParamsAreSet()
+{
+	uint32_t user_fan_speed_min = getUserParameterInt(USER_PARAM_FAN_SPEED_MIN),
+					 user_fan_speed_max = getUserParameterInt(USER_PARAM_FAN_SPEED_MAX),
+					 user_wheel_diameter = getUserParameterInt(USER_PARAM_WHEEL_DIAMETER),
+					 user_wheel_pulses = getUserParameterInt(USER_PARAM_WHEEL_PULSES);
+	
+	uint8_t other_options_check = (user_fan_speed_max > user_fan_speed_min && (user_fan_speed_max - user_fan_speed_min) >= SENSOR_VALUE_FAN_MIN_RANGE && user_wheel_diameter != 0 && user_wheel_pulses != 0);
+	return other_options_check;
 }
 
 
 // ======================
 // Parameter calculation
 // ======================
+
+uint32_t getPow10(uint8_t pwr)
+{
+	uint32_t scaler = 1;
+	for (uint8_t i = 0; i < pwr; i++)
+		scaler *= 10;
+	return scaler;
+}
 
 float equate_kg_per_ha_and_g_per_sq_m(float input, uint8_t from_kg_per_ha)
 {
@@ -116,30 +165,36 @@ uint8_t performMotorSpeedCheck(float motor_speed)
 	return ( motor_check > (MOTOR_SPEED_LIMIT_MIN * 10) && motor_check <= (MOTOR_SPEED_LIMIT_MAX * 10) );
 }
 
-uint32_t calculateMinMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g)
+float calculateSpeed_fromMotorSpeed(float motor_speed_turns_per_min, uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g)
 {
-	for (uint8_t i = 0; i < 100; i++)
+	if (quota_kg_per_ha != 0 && seeder_width_m != 0)
 	{
-		uint8_t speed = i;
-		if ( performMotorSpeedCheck( calculateMotorSpeed_fromSpeed(quota_kg_per_ha, seeder_width_m, mass_per_turn_g, speed) ) )
-		{
-			return speed;
-		}
+		return equate_km_per_h_and_m_per_s(motor_speed_turns_per_min / SECONDS_IN_MINUTE * (float)mass_per_turn_g / equate_kg_per_ha_and_g_per_sq_m(quota_kg_per_ha, true) / (float)seeder_width_m, false);
 	}
 	return 0;
 }
 
-uint32_t calculateMaxMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g)
+float calculateMinSpeed_fromMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g)
 {
-	for (uint8_t i = 0; i < 100; i++)
+	float min_speed = calculateSpeed_fromMotorSpeed(MOTOR_SPEED_LIMIT_MIN, quota_kg_per_ha, seeder_width_m, mass_per_turn_g);
+	min_speed += SENSOR_VALUE_SPEED_BORDER_MIN;
+	
+	return min_speed;
+}
+
+float calculateMaxSpeed_fromMotorSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g)
+{
+	float max_speed = calculateSpeed_fromMotorSpeed(MOTOR_SPEED_LIMIT_MAX, quota_kg_per_ha, seeder_width_m, mass_per_turn_g);
+	
+	if (max_speed < SENSOR_VALUE_SPEED_BORDER_MIN)
 	{
-		uint8_t speed = 100-i-1;
-		if ( performMotorSpeedCheck( calculateMotorSpeed_fromSpeed(quota_kg_per_ha, seeder_width_m, mass_per_turn_g, speed) ) )
-		{
-			return speed;
-		}
+		max_speed = 0;
 	}
-	return 0;
+	else
+	{
+		max_speed -= SENSOR_VALUE_SPEED_BORDER_MIN;
+	}
+	return max_speed;
 }
 
 
@@ -159,7 +214,7 @@ uint16_t crc16_ccitt(const uint8_t *data, uint16_t len)
 		{
 			if (crc & 0x8000)
 			{
-				crc = (crc << 1) ^ CRC_CALC_PWR;
+				crc = (crc << 1) ^ CRC_CALC_XOR;
 			}
 			else
 			{
@@ -191,26 +246,13 @@ void save_user_params_batch()
 		}
 	}
 	
-	
-	uint32_t total_area, session_area;
-	memcpy(&total_area, &current_user_area_total, sizeof(total_area));
-	memcpy(&session_area, &current_user_area_session, sizeof(session_area));
-	
-	uint32_t params_array[SAVE_PARAMS_COUNT] = {0};
-	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
-	{
-		params_array[i] = getUserParameter(i);
-	}
-	params_array[SAVE_POS_TOTAL_AREA] = total_area;
-	params_array[SAVE_POS_SESSION_AREA] = session_area;
-	
-	uint16_t crc16 = crc16_ccitt((uint8_t*)params_array, sizeof(params_array));
+	uint16_t crc16 = crc16_ccitt((uint8_t*)user_params_array, sizeof(user_params_array));
 	
 	
 	flash_save16(begin_addr + SAVE_POS_FLAG * 2, SAVE_FLAG_SLOT_VALID);
-	for (uint8_t i = 0; i < SAVE_PARAMS_COUNT; i++)
+	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
 	{
-		flash_save32(begin_addr + i * 4, params_array[i]);
+		flash_save32(begin_addr + i * 4, user_params_array[i]);
 	}
 	flash_save16(begin_addr + SAVE_POS_CRC * 2, crc16);
 	
@@ -222,7 +264,7 @@ void save_user_params_batch()
 
 void restore_user_params_batch()
 {
-	uint32_t params_array[SAVE_PARAMS_COUNT] = {0};
+	uint32_t params_array[USER_PARAMS_COUNT] = {0};
 	
 	uint32_t begin_addr;
 	uint8_t invalid_slots_found = false;
@@ -232,7 +274,7 @@ void restore_user_params_batch()
 		uint16_t save_flg = flash_read16(begin_addr + SAVE_POS_FLAG * 2);
 		if (save_flg == SAVE_FLAG_SLOT_VALID)
 		{
-			for (uint8_t j = 0; j < SAVE_PARAMS_COUNT; j++)
+			for (uint8_t j = 0; j < USER_PARAMS_COUNT; j++)
 			{
 				params_array[j] = flash_read32(begin_addr + j * 4);
 			}
@@ -265,10 +307,8 @@ void restore_user_params_batch()
 	
 	for (uint8_t i = 0; i < USER_PARAMS_COUNT; i++)
 	{
-		setUserParameter(i, params_array[i]);
+		user_params_array[i] = params_array[i];
 	}
-	memcpy(&current_user_area_total, &params_array[SAVE_POS_TOTAL_AREA], sizeof(current_user_area_total));
-	memcpy(&current_user_area_session, &params_array[SAVE_POS_SESSION_AREA], sizeof(current_user_area_session));
 	
 	user_params_differentiate = false;
 	user_params_last_save_time = sys_timer;

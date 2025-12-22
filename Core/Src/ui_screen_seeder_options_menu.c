@@ -32,11 +32,8 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 {
 	ui_clearScreen(screen);
 
-	uint32_t user_speed_max = getUserParameter(USER_PARAM_SPEED_MAX),
-					 user_mass_per_turn = getUserParameter(USER_PARAM_MASS_PER_TURN),
-					 user_quota = getUserParameter(USER_PARAM_MASS_PER_TURN),
-					 user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH);
-	uint8_t calibration_check_allowed = (user_speed_max != 0 && user_mass_per_turn != 0 && user_quota != 0 && user_seeder_width != 0);
+	uint8_t calibration_check_allowed = checkIfSeederParamsAreSet();
+	
   for (uint8_t i = 0; i < SOM_ELEMENT_COUNT; i++)
   {
     // ---------------- Visual ----------------

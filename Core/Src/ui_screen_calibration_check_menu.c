@@ -170,7 +170,7 @@ static void CCMHelper_SetElementFunctionality_Array(UI_Screen* screen, uint8_t* 
 
 static void CCMHelper_CalculateRequiredTime()
 {
-	initial_time_total = calculateTimeMillis_fromArea(speed_val, getUserParameter(USER_PARAM_SEEDER_WIDTH), area_divider_val);
+	initial_time_total = calculateTimeMillis_fromArea(speed_val, getUserParameterInt(USER_PARAM_SEEDER_WIDTH), area_divider_val);
 	uint32_t time_copy = initial_time_total / MILLIS_IN_SECOND;
 	
 	time_hour_val = time_copy / SECONDS_IN_MINUTE / MINUTES_IN_HOUR;
@@ -269,8 +269,8 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				{
 					if (val_pos == CCM_POS_SPEED_VAL)
 					{
-						uint32_t min_val = getUserParameter(USER_PARAM_SPEED_MIN);
-						uint32_t max_val = getUserParameter(USER_PARAM_SPEED_MAX);
+						uint32_t min_val = ceil(getUserParameterFloat(USER_PARAM_SPEED_MIN));
+						uint32_t max_val = floor(getUserParameterFloat(USER_PARAM_SPEED_MAX));
 						utils_edit_value_by_slot_with_min_max(val_ptr, selected_slot, val_allowed_lengths[val_pos], press_type, min_val, max_val);
 					}
 					else
@@ -287,7 +287,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				case back_id: UI_BuildSeederOptionsMenu(screen); break;
 				case begin_check_id:
 				{
-					current_can_motor_speed = calculateMotorSpeed_fromTime(getUserParameter(USER_PARAM_QUOTA), area_divider_val, mass_per_turn_val, initial_time_total);
+					current_can_motor_speed = calculateMotorSpeed_fromTime(getUserParameterInt(USER_PARAM_QUOTA), area_divider_val, mass_per_turn_val, initial_time_total);
 					
 					uint8_t deselection_array[] = { CCM_POS_SPEED_ITEM, CCM_POS_AREA_ITEM };
 					CCMHelper_SetElementFunctionality_Array(screen, deselection_array, sizeof(deselection_array), 1, 0);
@@ -327,9 +327,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				}
 				case count_params_id:
 				{
-					uint8_t deviation_scaler = 1;
-					for (uint8_t i = 0; i < val_lengths_after_dot[CCM_POS_DEVIATION_VAL]; i++)
-						deviation_scaler *= 10;
+					uint32_t deviation_scaler = getPow10(val_lengths_after_dot[CCM_POS_DEVIATION_VAL]);
 					new_mass_val = round( (float)actual_mass_val / (current_can_motor_speed * (float)total_motor_movement_time / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
 					deviation_percent_val = round( ((float)abs((int32_t)new_mass_val - (int32_t)mass_per_turn_val)) * (float)deviation_scaler * 100 / (float)mass_per_turn_val );
 					
@@ -344,9 +342,10 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 						CCMHelper_SetElementFunctionality(screen, CCM_POS_APPLY, 0, 0);
 					}
 					
+					
 					CCMHelper_ConvertValToText(screen, CCM_POS_NEW_MASS_VAL);
 					CCMHelper_ConvertValToText(screen, CCM_POS_DEVIATION_VAL);
-					
+				
 					CCMHelper_SetElementFunctionality(screen, CCM_POS_NEW_MASS_ITEM, 1, 0);
 					CCMHelper_SetElementFunctionality(screen, CCM_POS_DEVIATION_ITEM, 1, 0);
 					
@@ -355,11 +354,18 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				}
 				case apply_id:
 				{
-					setUserParameter(USER_PARAM_MASS_PER_TURN, new_mass_val);
+					setUserParameterInt(USER_PARAM_MASS_PER_TURN, new_mass_val);
 					
-					uint32_t user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameter(USER_PARAM_QUOTA);
-					setUserParameter(USER_PARAM_SPEED_MIN, calculateMinMotorSpeed(user_quota, user_seeder_width, new_mass_val));
-					setUserParameter(USER_PARAM_SPEED_MAX, calculateMaxMotorSpeed(user_quota, user_seeder_width, new_mass_val));
+					uint32_t user_seeder_width = getUserParameterInt(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameterInt(USER_PARAM_QUOTA);
+					float min_speed_val = calculateMinSpeed_fromMotorSpeed(user_quota, user_seeder_width, new_mass_val), max_speed_val = calculateMaxSpeed_fromMotorSpeed(user_quota, user_seeder_width, new_mass_val);
+					if (max_speed_val <= min_speed_val)
+					{
+						min_speed_val = 0;
+						max_speed_val = 0;
+					}
+					
+					setUserParameterFloat(USER_PARAM_SPEED_MIN, min_speed_val);
+					setUserParameterFloat(USER_PARAM_SPEED_MAX, max_speed_val);
 					
 					break;
 				}
@@ -433,7 +439,7 @@ static void CalibrationCheckMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_El
 						CCMHelper_ConvertValToText(screen, CCM_POS_TIME_SEC_VAL);
 						
 						uint8_t motor_speed_check = 0;
-						uint32_t user_quota = getUserParameter(USER_PARAM_QUOTA);
+						uint32_t user_quota = getUserParameterInt(USER_PARAM_QUOTA);
 						if (initial_time_total != 0 && user_quota != 0 && mass_per_turn_val != 0)
 						{
 							counted_mass_val = round( (float)user_quota * GRAMS_IN_KILOGRAM / (float)area_divider_val );
@@ -491,11 +497,11 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 	selected_area_divider_pos = 0;
 	total_motor_movement_time = 0;
 	
-	uint32_t user_speed_min = getUserParameter(USER_PARAM_SPEED_MIN),
-					 user_speed_max = getUserParameter(USER_PARAM_SPEED_MAX),
-					 user_quota = getUserParameter(USER_PARAM_QUOTA),
-					 user_seeder_width = getUserParameter(USER_PARAM_SEEDER_WIDTH),
-					 user_mass_per_turn = getUserParameter(USER_PARAM_MASS_PER_TURN);
+	float user_speed_min = getUserParameterFloat(USER_PARAM_SPEED_MIN),
+				user_speed_max = getUserParameterFloat(USER_PARAM_SPEED_MAX);
+	uint32_t user_quota = getUserParameterInt(USER_PARAM_QUOTA),
+					 user_seeder_width = getUserParameterInt(USER_PARAM_SEEDER_WIDTH),
+					 user_mass_per_turn = getUserParameterInt(USER_PARAM_MASS_PER_TURN);
 	
   for (uint8_t i = 0; i < CCM_ELEMENT_TEXT_COUNT; i++)
   {
@@ -541,7 +547,7 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 		*val_ptrs[i] = 0;
 	}
 	mass_per_turn_val = user_mass_per_turn;
-	speed_val = user_speed_min;
+	speed_val = ceil(user_speed_min);
 	area_divider_val = possible_area_divider_vals[selected_area_divider_pos];
 	
 	if (speed_val != 0 && area_divider_val != 0 && mass_per_turn_val != 0 && user_quota != 0 && user_seeder_width != 0)
