@@ -185,7 +185,7 @@ void setCurrentLogicState(Logic_State_Type new_state)
 				switch_to_start_menu_allowed = true;
 				break;
 			case LSTATE_NONE:
-				can_should_stop_motor = (current_can_motor_speed != 0);
+				can_should_stop_motor = (current_can_motor_speed != 0) || (curr_logic_state == LSTATE_CAN_TEST);
 				break;
 		}
 	}
@@ -498,13 +498,10 @@ int main(void)
 							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok && !error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_CAN]);
 							
 							uint8_t seeder_speed_check_ok = (current_seeder_speed <= user_speed_max && current_seeder_speed >= user_speed_min);
-							if (!seeder_speed_check_ok)
+							current_can_motor_speed = calculateMotorSpeed_fromSpeed(user_quota, user_seeder_width, user_mass_per_turn, current_seeder_speed);
+							if (!performMotorSpeedCheck(current_can_motor_speed))
 							{
-								current_can_motor_speed = (current_seeder_speed > user_speed_max) ? MOTOR_SPEED_LIMIT_MAX : MOTOR_SPEED_LIMIT_MIN;
-							}
-							else
-							{
-								current_can_motor_speed = calculateMotorSpeed_fromSpeed(user_quota, user_seeder_width, user_mass_per_turn, current_seeder_speed);
+								current_can_motor_speed = (current_can_motor_speed > MOTOR_SPEED_LIMIT_MAX) ? MOTOR_SPEED_LIMIT_MAX : MOTOR_SPEED_LIMIT_MIN;
 							}
 							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_SPEED, !seeder_speed_check_ok);
 							

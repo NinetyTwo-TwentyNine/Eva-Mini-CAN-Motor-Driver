@@ -222,7 +222,7 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 		
 		if (time_left == 0)
 		{
-			curr_logic_state = LSTATE_NONE;
+			setCurrentLogicState(LSTATE_NONE);
 			
 			CCMHelper_SetElementFunctionality(screen, CCM_POS_ACTUAL_MASS_ITEM, 1, 1);
 			if (actual_mass_val > 0)

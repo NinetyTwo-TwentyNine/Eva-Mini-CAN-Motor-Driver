@@ -192,7 +192,7 @@ static void CalibrationMenu_ScreenCallback(UI_Screen* screen)
 			
 			if (time_sec_val == 0 && time_min_val == 0)
 			{
-				curr_logic_state = LSTATE_NONE;
+				setCurrentLogicState(LSTATE_NONE);
 				
 				CMHelper_SetElementFunctionality(screen, CM_POS_MASS_ITEM, 1, 1);
 				if (mass_val > 0)
