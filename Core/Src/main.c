@@ -440,8 +440,8 @@ int main(void)
 								current_user_area_session = getUserParameterFloat(USER_PARAM_AREA_SESSION), current_user_area_total = getUserParameterFloat(USER_PARAM_AREA_TOTAL);
 					uint32_t user_wheel_diameter = getUserParameterInt(USER_PARAM_WHEEL_DIAMETER), user_wheel_pulses = getUserParameterInt(USER_PARAM_WHEEL_PULSES),
 									 user_fan_speed_min = getUserParameterInt(USER_PARAM_FAN_SPEED_MIN), user_fan_speed_max = getUserParameterInt(USER_PARAM_FAN_SPEED_MAX),
-									 user_seeder_width = getUserParameterInt(USER_PARAM_SEEDER_WIDTH), user_quota = getUserParameterInt(USER_PARAM_QUOTA),
-									 user_mass_per_turn = getUserParameterInt(USER_PARAM_MASS_PER_TURN);
+									 user_fan_pulses = getUserParameterInt(USER_PARAM_FAN_PULSES), user_seeder_width = getUserParameterInt(USER_PARAM_SEEDER_WIDTH),
+									 user_quota = getUserParameterInt(USER_PARAM_QUOTA), user_mass_per_turn = getUserParameterInt(USER_PARAM_MASS_PER_TURN);
 					
 					
 					SENSADDR_GPIO_TypeDef *seeder_sensor_addr = sensor_address_gpio[SENSADDR_POS_SEEDER], *bunker_sensor_addr = sensor_address_gpio[SENSADDR_POS_BUNKER];
@@ -452,32 +452,25 @@ int main(void)
 					
 					float prev_seeder_speed = current_seeder_speed;
 					
-					current_fan_speed = sensor_frequency[SENSADDR_POS_FAN] * SECONDS_IN_MINUTE;
+					current_fan_speed = calculateFanSpeed_fromSensorOutput(user_fan_pulses, sensor_frequency[SENSADDR_POS_FAN]);
 					current_seeder_speed = calculateSeederSpeed_fromSensorOutput(user_wheel_diameter, user_wheel_pulses, sensor_frequency[SENSADDR_POS_SPEED]);
+					
+					current_actual_motor_speed = 0;
+					current_quota = 0;
 					if (current_state_seeder_down)
 					{
 						current_actual_motor_speed = sensor_frequency[SENSADDR_POS_MOTOR] * SECONDS_IN_MINUTE;
 						
-						float calculation_motor_speed = current_actual_motor_speed;
+						float calculation_motor_speed = current_can_motor_speed;
 						if (error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_CAN])
 						{
 							calculation_motor_speed = 0;
 						}
-						else if (error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_MOTOR])
-						{
-							calculation_motor_speed = current_can_motor_speed;
-						}
 						
-						current_quota = 0;
 						if (!error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_EMPTY])
 						{
 							current_quota = calculateQuota_fromSpeed(user_seeder_width, current_seeder_speed, user_mass_per_turn, calculation_motor_speed);
 						}
-					}
-					else
-					{
-						current_actual_motor_speed = 0;
-						current_quota = 0;
 					}
 					
 					// Main logic (if the setup was completed)
@@ -490,11 +483,7 @@ int main(void)
 						
 						if (current_state_seeder_down && (sys_timer - can_last_send_time) > CAN_TRANSMISSION_INTERVAL)
 						{
-							float low_border, high_border;
-							
-							low_border = current_can_motor_speed * (100 - SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
-							high_border = current_can_motor_speed * (100 + SENSOR_VALUE_MOTOR_ALLOWED_DEVIATION)/100;
-							uint8_t motor_speed_check_ok = (current_actual_motor_speed >= low_border && current_actual_motor_speed <= high_border);
+							uint8_t motor_speed_check_ok = ( current_actual_motor_speed >= calculateMotorSpeed_fromSpeed(user_quota, user_seeder_width, user_mass_per_turn, SENSOR_VALUE_SPEED_BORDER_MIN) );
 							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_MOTOR, !motor_speed_check_ok && !error_state_array[ERROR_STATE_ACTIVE][ERROR_TYPE_CAN]);
 							
 							uint8_t seeder_speed_check_ok = (current_seeder_speed <= user_speed_max && current_seeder_speed >= user_speed_min);
@@ -505,8 +494,7 @@ int main(void)
 							}
 							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_SPEED, !seeder_speed_check_ok);
 							
-							low_border = (float)user_quota * (100 - SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
-							high_border = (float)user_quota * (100 + SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
+							float low_border = (float)user_quota * (100 - SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100, high_border = (float)user_quota * (100 + SENSOR_VALUE_QUOTA_ALLOWED_DEVIATION)/100;
 							uint8_t quota_check_ok = (current_quota >= low_border && current_quota <= high_border);
 							updateErrorState(ERROR_STATE_PREACTIVE, ERROR_TYPE_QUOTA, !quota_check_ok);
 							

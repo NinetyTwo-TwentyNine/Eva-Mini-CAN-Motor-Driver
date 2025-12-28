@@ -408,11 +408,9 @@ static void CalibrationMenu_OnItemPressed_OnSelect(UI_Screen* screen, UI_Element
 							setUserParameterFloat(USER_PARAM_SPEED_MIN, 0);
 							setUserParameterFloat(USER_PARAM_SPEED_MAX, 0);
 							
-							uint8_t text_items_array[] = {CM_POS_COUNTED_MASS_VAL, CM_POS_COUNTED_MIN_SPEED_VAL, CM_POS_COUNTED_MAX_SPEED_VAL};
-							for (uint8_t i = 0; i < sizeof(text_items_array); i++)
-							{
-								CMHelper_ConvertValToText(screen, text_items_array[i]);
-							}
+							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MASS_VAL);
+							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MIN_SPEED_VAL);
+							CMHelper_ConvertValToText(screen, CM_POS_COUNTED_MAX_SPEED_VAL);
 							
 							if (width_val != getUserParameterInt(USER_PARAM_SEEDER_WIDTH))
 							{

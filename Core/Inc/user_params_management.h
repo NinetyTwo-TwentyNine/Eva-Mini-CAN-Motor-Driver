@@ -40,6 +40,7 @@ uint8_t checkIfOtherParamsAreSet(void);
 
 uint32_t getPow10(uint8_t pwr);
 uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder_width_m, uint8_t area_divider);
+float calculateFanSpeed_fromSensorOutput(uint32_t pulses_per_turn_count, float sensor_frequency_hz);
 float calculateSeederSpeed_fromSensorOutput(uint32_t wheel_diameter_dm, uint32_t pulses_per_wheel_count, float sensor_frequency_hz);
 float calculateMotorSpeed_fromTime(uint32_t quota_kg_per_ha, uint8_t area_divider, uint32_t mass_per_turn_g, uint32_t time_total_millis);
 float calculateMotorSpeed_fromSpeed(uint32_t quota_kg_per_ha, uint32_t seeder_width_m, uint32_t mass_per_turn_g, float seeder_speed_kmh);

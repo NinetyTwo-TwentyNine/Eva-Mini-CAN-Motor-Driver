@@ -63,10 +63,11 @@ uint8_t checkIfOtherParamsAreSet()
 {
 	uint32_t user_fan_speed_min = getUserParameterInt(USER_PARAM_FAN_SPEED_MIN),
 					 user_fan_speed_max = getUserParameterInt(USER_PARAM_FAN_SPEED_MAX),
+					 user_fan_pulses = getUserParameterInt(USER_PARAM_FAN_PULSES),
 					 user_wheel_diameter = getUserParameterInt(USER_PARAM_WHEEL_DIAMETER),
 					 user_wheel_pulses = getUserParameterInt(USER_PARAM_WHEEL_PULSES);
 	
-	uint8_t other_options_check = (user_fan_speed_max > user_fan_speed_min && (user_fan_speed_max - user_fan_speed_min) >= SENSOR_VALUE_FAN_MIN_RANGE && user_wheel_diameter != 0 && user_wheel_pulses != 0);
+	uint8_t other_options_check = (user_fan_speed_max > user_fan_speed_min && (user_fan_speed_max - user_fan_speed_min) >= SENSOR_VALUE_FAN_MIN_RANGE && user_fan_pulses != 0 && user_wheel_diameter != 0 && user_wheel_pulses != 0);
 	return other_options_check;
 }
 
@@ -113,6 +114,15 @@ uint32_t calculateTimeMillis_fromArea(uint32_t seeder_speed_kmh, uint32_t seeder
 	if (seeder_speed_kmh != 0 && seeder_width_m != 0 && area_divider != 0)
 	{
 		return round( (float)SQUARE_METERS_IN_HECTARE / (float)area_divider / ((float)seeder_speed_kmh * METERS_IN_KILOMETER / SECONDS_IN_MINUTE / MINUTES_IN_HOUR * (float)seeder_width_m) * MILLIS_IN_SECOND );
+	}
+	return 0;
+}
+
+float calculateFanSpeed_fromSensorOutput(uint32_t pulses_per_turn_count, float sensor_frequency_hz)
+{
+	if (pulses_per_turn_count != 0)
+	{
+		return sensor_frequency_hz * SECONDS_IN_MINUTE / (float)pulses_per_turn_count;
 	}
 	return 0;
 }
