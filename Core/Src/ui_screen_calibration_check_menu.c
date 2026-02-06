@@ -51,6 +51,7 @@ static uint8_t selected_slot, selected_slot_gone;
 
 static uint32_t initial_time_total, total_motor_movement_time;
 static uint64_t time_save_ui;
+static float motor_speed_save;
 static const uint16_t slot_blink_period = 400;
 
 static int16_t CCMHelper_GetValPosFromItemId(uint8_t item_id);
@@ -288,6 +289,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				case begin_check_id:
 				{
 					current_can_motor_speed = calculateMotorSpeed_fromTime(getUserParameterInt(USER_PARAM_QUOTA), area_divider_val, mass_per_turn_val, initial_time_total);
+					motor_speed_save = current_can_motor_speed;
 					
 					uint8_t deselection_array[] = { CCM_POS_SPEED_ITEM, CCM_POS_AREA_ITEM };
 					CCMHelper_SetElementFunctionality_Array(screen, deselection_array, sizeof(deselection_array), 1, 0);
@@ -328,7 +330,7 @@ static void CalibrationCheckMenu_OnItemPressed_Main(UI_Screen* screen, UI_Elemen
 				case count_params_id:
 				{
 					uint32_t deviation_scaler = getPow10(val_lengths_after_dot[CCM_POS_DEVIATION_VAL]);
-					new_mass_val = round( (float)actual_mass_val / (current_can_motor_speed * (float)total_motor_movement_time / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
+					new_mass_val = round( (float)actual_mass_val / (motor_speed_save * (float)total_motor_movement_time / SECONDS_IN_MINUTE / MILLIS_IN_SECOND) );
 					deviation_percent_val = round( ((float)abs((int32_t)new_mass_val - (int32_t)mass_per_turn_val)) * (float)deviation_scaler * 100 / (float)mass_per_turn_val );
 					
 					CCMHelper_SetElementFunctionality(screen, CCM_POS_BEGIN_CHECK, 0, 0);

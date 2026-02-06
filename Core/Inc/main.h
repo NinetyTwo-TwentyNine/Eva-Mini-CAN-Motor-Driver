@@ -192,11 +192,11 @@ extern uint8_t mcp23_check_required, mcp23_check_allowed, mcp23_check_result_out
 extern uint64_t mcp23_last_check_time;
 
 
-#define MATRIX_POS_BUTTON_UP 00
-#define MATRIX_POS_BUTTON_DOWN 01
-#define MATRIX_POS_BUTTON_MENU 20
-#define MATRIX_POS_BUTTON_OK 21
-#define MATRIX_POS_BUTTON_POWER 11
+#define MATRIX_POS_BUTTON_UP 01
+#define MATRIX_POS_BUTTON_DOWN 21
+#define MATRIX_POS_BUTTON_MENU 00
+#define MATRIX_POS_BUTTON_OK 11
+#define MATRIX_POS_BUTTON_POWER 10
 
 // CAN
 #define CAN_TRANSMISSION_INTERVAL 100

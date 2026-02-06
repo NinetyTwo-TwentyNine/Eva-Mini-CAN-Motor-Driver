@@ -54,9 +54,9 @@ float sensor_frequency[SENSOR_COUNT_MAX] = {0};
 uint64_t sensor_last_check_time[SENSOR_COUNT_MAX] = {0};
 
 SENSADDR_TIM_TypeDef* sensor_address_timer[SENSOR_COUNT_MAX] = {
+	&(SENSADDR_TIM_TypeDef){TIM2, 3},	
 	&(SENSADDR_TIM_TypeDef){TIM1, 3},
 	&(SENSADDR_TIM_TypeDef){TIM1, 4},
-	&(SENSADDR_TIM_TypeDef){TIM2, 3},
 	NULL,
 	NULL
 };

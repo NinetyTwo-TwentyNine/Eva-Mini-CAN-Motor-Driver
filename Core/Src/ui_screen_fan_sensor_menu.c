@@ -11,6 +11,7 @@ static char *labels[FSM_ELEMENT_TEXT_COUNT] = { "Датчик вентилято
 static const uint8_t screen_label_id = 1, min_item_id = 2, max_item_id = 3, pulses_item_id = 4, back_id = 5;
 static uint8_t xpos[FSM_ELEMENT_TEXT_COUNT] = { 8, 8, 8, 8, 8 };
 static uint8_t ypos[FSM_ELEMENT_TEXT_COUNT] = { 4, 20, 36, 52, 68 };
+static uint8_t offsets_y_up[FSM_ELEMENT_TEXT_COUNT] = { 0, CHAR_BASE_HEIGHT * 2, 0, 0, 0 };
 static uint8_t text_offset_scalers[FSM_ELEMENT_TEXT_COUNT] = { 0, 10, 10, 2, 0 };
 static uint8_t label_ids[FSM_ELEMENT_TEXT_COUNT] = { screen_label_id, min_item_id, max_item_id, pulses_item_id, back_id };
 static uint8_t label_tab_ids[FSM_ELEMENT_TEXT_COUNT] = { 0, 2, 3, 4, 5 };
@@ -255,6 +256,7 @@ void UI_BuildFanSensorMenu(UI_Screen* screen)
 			  labels[i],          		// text
         UI_MAIN_TEXT_SIZE   // font size
     );
+		vis->offset_y_up = offsets_y_up[i];
 
     // Optional: assign visual ID
 		vis->id = label_ids[i];
