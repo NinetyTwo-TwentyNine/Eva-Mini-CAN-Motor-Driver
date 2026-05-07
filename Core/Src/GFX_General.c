@@ -1,7 +1,7 @@
 #include "GFX_General.h"
 
-uint16_t _width = SCREEN_WIDTH, _height = SCREEN_HEIGHT, _cursor_y = 0, _cursor_x = 0, _textcolor = 0xFFFF, _textbgcolor = 0xFFFF;
-uint8_t _rotation = 0, _textsize = 1, _wrap = true;
+uint16_t _width = SCREEN_WIDTH, _height = SCREEN_HEIGHT, _cursor_y = 0, _cursor_x = 0;
+uint8_t _textcolor = 0x0F, _textbgcolor = 0x0F, _rotation = 0, _textsize = 1, _wrap = true;
 
 static const unsigned char font[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -290,7 +290,7 @@ uint32_t gfx_println()
 
 
 // Draw a circle outline
-void gfx_drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color) {
+void gfx_drawCircle(int16_t x0, int16_t y0, int16_t r, uint8_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
   int16_t ddF_y = -2 * r;
@@ -323,7 +323,7 @@ void gfx_drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color) {
   }
 }
 
-void gfx_drawCircleHelper( int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint16_t color) {
+void gfx_drawCircleHelper( int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint8_t color) {
   int16_t f     = 1 - r;
   int16_t ddF_x = 1;
   int16_t ddF_y = -2 * r;
@@ -358,13 +358,13 @@ void gfx_drawCircleHelper( int16_t x0, int16_t y0, int16_t r, uint8_t cornername
   }
 }
 
-void gfx_fillCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color) {
+void gfx_fillCircle(int16_t x0, int16_t y0, int16_t r, uint8_t color) {
   gfx_drawFastVLine(x0, y0-r, 2*r+1, color);
   gfx_fillCircleHelper(x0, y0, r, 3, 0, color);
 }
 
 // Used to do circles and roundrects
-void gfx_fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, int16_t delta, uint16_t color) {
+void gfx_fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, int16_t delta, uint8_t color) {
   int16_t f     = 1 - r;
   int16_t ddF_x = 1;
   int16_t ddF_y = -2 * r;
@@ -393,7 +393,7 @@ void gfx_fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername,
 }
 
 // Bresenham's algorithm - thx wikpedia
-void gfx_drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) {
+void gfx_drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint8_t color) {
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     swap(x0, y0);
@@ -433,36 +433,36 @@ void gfx_drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color
 }
 
 // Draw a rectangle
-void gfx_drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
+void gfx_drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color) {
   gfx_drawFastHLine(x, y, w, color);
   gfx_drawFastHLine(x, y+h-1, w, color);
   gfx_drawFastVLine(x, y, h, color);
   gfx_drawFastVLine(x+w-1, y, h, color);
 }
 
-/*void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
+/*void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t color) {
   // Updated in GFX_SSD1306
   gfx_drawLine(x, y, x, y+h-1, color);
 }*/ 
 
-/*void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
+/*void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t color) {
   // Updated in GFX_SSD1306
   gfx_drawLine(x, y, x+w-1, y, color);
 }*/
 
-void gfx_fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
+void gfx_fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t color) {
   // Update in subclasses if desired!
   for (int16_t i=x; i<x+w; i++) {
     gfx_drawFastVLine(i, y, h, color);
   }
 }
 
-void gfx_fillScreen(uint16_t color) {
+void gfx_fillScreen(uint8_t color) {
   gfx_fillRect(0, 0, _width, _height, color);
 }
 
 // Draw a rounded rectangle
-void gfx_drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color) {
+void gfx_drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint8_t color) {
   // smarter version
   gfx_drawFastHLine(x+r  , y    , w-2*r, color); // Top
   gfx_drawFastHLine(x+r  , y+h-1, w-2*r, color); // Bottom
@@ -476,7 +476,7 @@ void gfx_drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, ui
 }
 
 // Fill a rounded rectangle
-void gfx_fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color) {
+void gfx_fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint8_t color) {
   // smarter version
   gfx_fillRect(x+r, y, w-2*r, h, color);
 
@@ -486,14 +486,14 @@ void gfx_fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, ui
 }
 
 // Draw a triangle
-void gfx_drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) {
+void gfx_drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color) {
   gfx_drawLine(x0, y0, x1, y1, color);
   gfx_drawLine(x1, y1, x2, y2, color);
   gfx_drawLine(x2, y2, x0, y0, color);
 }
 
 // Fill a triangle
-void gfx_fillTriangle( int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) {
+void gfx_fillTriangle( int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color) {
   int16_t a, b, y, last;
 
   // Sort coordinates by Y order (y2 >= y1 >= y0)
@@ -567,7 +567,7 @@ void gfx_fillTriangle( int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x
   }
 }
 
-void gfx_drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) {
+void gfx_drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint8_t color) {
   int16_t i, j, byteWidth = (w + 7) / 8;
 
   for(j=0; j<h; j++) {
@@ -597,7 +597,7 @@ uint32_t gfx_write(uint8_t c) {
 }
 
 // Draw a character
-void gfx_drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size) {
+void gfx_drawChar(int16_t x, int16_t y, unsigned char c, uint8_t color, uint8_t bg, uint8_t size) {
   if((x >= _width)            || // Clip right
      (y >= _height)           || // Clip bottom
      ((x + CHAR_BASE_WIDTH * size - 1) < 0) || // Clip left
@@ -645,7 +645,7 @@ void gfx_setTextSize(uint8_t s) {
 	_textbgcolor = c;
 }*/
 
-void gfx_setTextColor(uint16_t c, uint16_t b) {
+void gfx_setTextColor(uint8_t c, uint8_t b) {
   _textcolor   = c;
   _textbgcolor = b; 
 }
@@ -687,4 +687,3 @@ int16_t display_height(void) {
   // Must be overwritten if supported
   // Updated in GFX_SSD1306
 }*/
-

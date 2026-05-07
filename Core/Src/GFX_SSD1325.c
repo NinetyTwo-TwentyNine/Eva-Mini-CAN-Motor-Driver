@@ -1,4 +1,4 @@
-#include "GFX_SSD1306.h"
+#include "GFX_SSD1325.h"
 
 GPIO_TypeDef *_cs_port = CS_PORT, *_rst_port = RST_PORT, *_dc_port = DC_PORT, *_sclk_port = SCLK_PORT, *_sid_port = SID_PORT;
 LL_GPIO_InitTypeDef cs_buf, rst_buf, dc_buf, sclk_buf, sid_buf;
@@ -9,83 +9,16 @@ LL_I2C_InitTypeDef i2c_buf;
 LL_I2C_InitTypeDef *_i2c = &i2c_buf;
 int8_t _i2caddr, _vccstate;
 
-static uint8_t buffer[SSD1306_LCDHEIGHT * SSD1306_LCDWIDTH / 8] = { 
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
-0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x80, 0x80, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xF8, 0xE0, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80,
-0x80, 0x80, 0x00, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0xFF,
-0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00,
-0x80, 0xFF, 0xFF, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0x8C, 0x8E, 0x84, 0x00, 0x00, 0x80, 0xF8,
-0xF8, 0xF8, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xE0, 0xE0, 0xC0, 0x80,
-0x00, 0xE0, 0xFC, 0xFE, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0xC7, 0x01, 0x01,
-0x01, 0x01, 0x83, 0xFF, 0xFF, 0x00, 0x00, 0x7C, 0xFE, 0xC7, 0x01, 0x01, 0x01, 0x01, 0x83, 0xFF,
-0xFF, 0xFF, 0x00, 0x38, 0xFE, 0xC7, 0x83, 0x01, 0x01, 0x01, 0x83, 0xC7, 0xFF, 0xFF, 0x00, 0x00,
-0x01, 0xFF, 0xFF, 0x01, 0x01, 0x00, 0xFF, 0xFF, 0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x7F, 0xFF,
-0x80, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x01, 0xFF,
-0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x03, 0x0F, 0x3F, 0x7F, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE7, 0xC7, 0xC7, 0x8F,
-0x8F, 0x9F, 0xBF, 0xFF, 0xFF, 0xC3, 0xC0, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC, 0xFC, 0xFC,
-0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xF8, 0xF8, 0xF0, 0xF0, 0xE0, 0xC0, 0x00, 0x01, 0x03, 0x03, 0x03,
-0x03, 0x03, 0x01, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x03, 0x03, 0x01, 0x01,
-0x03, 0x01, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x03, 0x03, 0x01, 0x01, 0x03, 0x03, 0x00, 0x00,
-0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-0x03, 0x03, 0x03, 0x03, 0x03, 0x01, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x03,
-0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-#if (SSD1306_LCDHEIGHT == 64)
-0x00, 0x00, 0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF9, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F, 0x1F, 0x0F,
-0x87, 0xC7, 0xF7, 0xFF, 0xFF, 0x1F, 0x1F, 0x3D, 0xFC, 0xF8, 0xF8, 0xF8, 0xF8, 0x7C, 0x7D, 0xFF,
-0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x3F, 0x0F, 0x07, 0x00, 0x30, 0x30, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0xFE, 0xFE, 0xFC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xE0, 0xC0, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0xC0, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x7F, 0x3F, 0x1F,
-0x0F, 0x07, 0x1F, 0x7F, 0xFF, 0xFF, 0xF8, 0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xF8, 0xE0,
-0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0xFE, 0x00, 0x00,
-0x00, 0xFC, 0xFE, 0xFC, 0x0C, 0x06, 0x06, 0x0E, 0xFC, 0xF8, 0x00, 0x00, 0xF0, 0xF8, 0x1C, 0x0E,
-0x06, 0x06, 0x06, 0x0C, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFE, 0xFE, 0x00, 0x00, 0x00, 0x00, 0xFC,
-0xFE, 0xFC, 0x00, 0x18, 0x3C, 0x7E, 0x66, 0xE6, 0xCE, 0x84, 0x00, 0x00, 0x06, 0xFF, 0xFF, 0x06,
-0x06, 0xFC, 0xFE, 0xFC, 0x0C, 0x06, 0x06, 0x06, 0x00, 0x00, 0xFE, 0xFE, 0x00, 0x00, 0xC0, 0xF8,
-0xFC, 0x4E, 0x46, 0x46, 0x46, 0x4E, 0x7C, 0x78, 0x40, 0x18, 0x3C, 0x76, 0xE6, 0xCE, 0xCC, 0x80,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x01, 0x07, 0x0F, 0x1F, 0x1F, 0x3F, 0x3F, 0x3F, 0x3F, 0x1F, 0x0F, 0x03,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, 0x00, 0x00,
-0x00, 0x0F, 0x0F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, 0x00, 0x00, 0x03, 0x07, 0x0E, 0x0C,
-0x18, 0x18, 0x0C, 0x06, 0x0F, 0x0F, 0x0F, 0x00, 0x00, 0x01, 0x0F, 0x0E, 0x0C, 0x18, 0x0C, 0x0F,
-0x07, 0x01, 0x00, 0x04, 0x0E, 0x0C, 0x18, 0x0C, 0x0F, 0x07, 0x00, 0x00, 0x00, 0x0F, 0x0F, 0x00,
-0x00, 0x0F, 0x0F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, 0x00, 0x00, 0x00, 0x07,
-0x07, 0x0C, 0x0C, 0x18, 0x1C, 0x0C, 0x06, 0x06, 0x00, 0x04, 0x0E, 0x0C, 0x18, 0x0C, 0x0F, 0x07,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-#endif
-};
+static uint8_t buffer[SSD1325_LCDHEIGHT * SSD1325_LCDWIDTH / 2] = {0x00};
 
 
 
 // the most basic function, set a single pixel
-void gfx_drawPixel(int16_t x, int16_t y, uint16_t color) {
+void gfx_drawPixel(int16_t x, int16_t y, uint8_t color) {
   if ((x < 0) || (x >= display_width()) || (y < 0) || (y >= display_height()))
     return;
 
-  // check rotation, move pixel around if necessary
+  // rotation (unchanged)
   switch (gfx_getRotation()) {
   case 1:
     swap(x, y);
@@ -99,16 +32,21 @@ void gfx_drawPixel(int16_t x, int16_t y, uint16_t color) {
     swap(x, y);
     y = SCREEN_HEIGHT - y - 1;
     break;
-  }  
+  }
 
-  // x is which column
-  if (color == WHITE) 
-    buffer[x+ (y/8)*SSD1306_LCDWIDTH] |= (1 << (y&7));  
-  else
-    buffer[x+ (y/8)*SSD1306_LCDWIDTH] &= ~(1 << (y&7)); 
+  // Each byte = 2 pixels
+  uint16_t index = (x >> 1) + y * (SCREEN_WIDTH >> 1);
+
+  if (x & 1) {
+    // right pixel (low nibble)
+    buffer[index] = (buffer[index] & 0xF0) | (color & 0x0F);
+  } else {
+    // left pixel (high nibble)
+    buffer[index] = (buffer[index] & 0x0F) | ((color & 0x0F) << 4);
+  }
 }
 
-void ssd1306_begin(uint8_t vccstate, uint8_t i2caddr) {
+void ssd1325_begin(uint8_t vccstate, uint8_t i2caddr) {
 	if (DC_PORT == GPIOA || CS_PORT == GPIOA || RST_PORT == GPIOA || SCLK_PORT == GPIOA || SID_PORT == GPIOA)
 	{
 		LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOA);
@@ -254,106 +192,67 @@ void ssd1306_begin(uint8_t vccstate, uint8_t i2caddr) {
   // turn on VCC (9V?)
 		
 
-   #if defined SSD1306_128_32
-    // Init sequence for 128x32 OLED module
-    ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
-    ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV);            // 0xD5
-    ssd1306_command(0x80);                                  // the suggested ratio 0x80
-    ssd1306_command(SSD1306_SETMULTIPLEX);                  // 0xA8
-    ssd1306_command(0x1F);
-    ssd1306_command(SSD1306_SETDISPLAYOFFSET);              // 0xD3
-    ssd1306_command(0x0);                                   // no offset
-    ssd1306_command(SSD1306_SETSTARTLINE | 0x0);            // line #0
-    ssd1306_command(SSD1306_CHARGEPUMP);                    // 0x8D
-    if (vccstate == SSD1306_EXTERNALVCC) 
-      { ssd1306_command(0x10); }
-    else 
-      { ssd1306_command(0x14); }
-    ssd1306_command(SSD1306_MEMORYMODE);                    // 0x20
-    ssd1306_command(0x00);                                  // 0x0 act like ks0108
-		ssd1306_command(SSD1306_SEGREMAP | 0x1);
-    ssd1306_command(SSD1306_COMSCANDEC);
-    ssd1306_command(SSD1306_SETCOMPINS);                    // 0xDA
-    ssd1306_command(0x02);
-    ssd1306_command(SSD1306_SETCONTRAST);                   // 0x81
-    ssd1306_command(0x8F);
-    ssd1306_command(SSD1306_SETPRECHARGE);                  // 0xd9
-    if (vccstate == SSD1306_EXTERNALVCC) 
-      { ssd1306_command(0x22); }
-    else 
-      { ssd1306_command(0xF1); }
-    ssd1306_command(SSD1306_SETVCOMDETECT);                 // 0xDB
-    ssd1306_command(0x40);
-    ssd1306_command(SSD1306_DISPLAYALLON_RESUME);           // 0xA4
-    ssd1306_command(SSD1306_NORMALDISPLAY);                 // 0xA6
-  #endif
+	ssd1325_command(SSD1325_DISPLAYOFF);   /* display off */
+  ssd1325_command(SSD1325_SETCLOCK);     /* set osc division */
+  ssd1325_command(0xF1);                 /* 145 */
+  ssd1325_command(SSD1325_SETMULTIPLEX); /* multiplex ratio */
+  ssd1325_command(0x3f);                 /* duty = 1/64 */
+  ssd1325_command(SSD1325_SETOFFSET);    /* set display offset --- */
+  ssd1325_command(0x4C);                 /* 76 */
+  ssd1325_command(SSD1325_SETSTARTLINE); /*set start line */
+  ssd1325_command(0x00);                 /* ------ */
+  ssd1325_command(SSD1325_MASTERCONFIG); /*Set Master Config DC/DC Converter*/
+  ssd1325_command(0x02);
+  ssd1325_command(SSD1325_SETREMAP); /* set segment remap------ */
+  ssd1325_command(0x52);
+  //ssd1325_command(0x56);
+  ssd1325_command(SSD1325_SETCURRENT + 0x2); /* Set Full Current Range */
+  ssd1325_command(SSD1325_SETGRAYTABLE);
+  ssd1325_command(0x01);
+  ssd1325_command(0x11);
+  ssd1325_command(0x22);
+  ssd1325_command(0x32);
+  ssd1325_command(0x43);
+  ssd1325_command(0x54);
+  ssd1325_command(0x65);
+  ssd1325_command(0x76);
 
-  #if defined SSD1306_128_64
-    // Init sequence for 128x64 OLED module
-    ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
-    ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV);            // 0xD5
-    ssd1306_command(0x80);                                  // the suggested ratio 0x80
-    ssd1306_command(SSD1306_SETMULTIPLEX);                  // 0xA8
-    ssd1306_command(0x3F);
-    ssd1306_command(SSD1306_SETDISPLAYOFFSET);              // 0xD3
-    ssd1306_command(0x0);                                   // no offset
-    ssd1306_command(SSD1306_SETSTARTLINE | 0x0);            // line #0
-    ssd1306_command(SSD1306_CHARGEPUMP);                    // 0x8D
-    if (vccstate == SSD1306_EXTERNALVCC) 
-      { ssd1306_command(0x10); }
-    else 
-      { ssd1306_command(0x14); }
-    ssd1306_command(SSD1306_MEMORYMODE);                    // 0x20
-    ssd1306_command(0x00);                                  // 0x0 act like ks0108
-    ssd1306_command(SSD1306_SEGREMAP | 0x1);
-    ssd1306_command(SSD1306_COMSCANDEC);
-    //ssd1306_command(SSD1306_SETCOMPINS);                    // 0xDA
-		
-		/* SSD1315-Specific
-	  // Unlock driver IC
-    ssd1306_command(0xFD);
-    ssd1306_command(0x12); // Unlock OLED driver IC (Set Command Lock)
+  ssd1325_command(SSD1325_SETCONTRAST); /* set contrast current */
+  ssd1325_command(0x7F);                // max!
 
-    // Internal IREF setting
-    ssd1306_command(0xAD); // Set IREF Setting
-    ssd1306_command(0x30); // Enable internal IREF
-		*/
-		
-    ssd1306_command(SSD1306_SETCONTRAST);                   // 0x81
-    if (vccstate == SSD1306_EXTERNALVCC) 
-      { ssd1306_command(0x9F); }
-    else 
-      { ssd1306_command(0xCF); }
-    ssd1306_command(SSD1306_SETPRECHARGE);                  // 0xd9
-    if (vccstate == SSD1306_EXTERNALVCC) 
-      { ssd1306_command(0x22); }
-    else 
-      { ssd1306_command(0xF1); }
-    ssd1306_command(SSD1306_SETVCOMDETECT);                 // 0xDB
-    ssd1306_command(0x40);
-    ssd1306_command(SSD1306_DISPLAYALLON_RESUME);           // 0xA4
-    ssd1306_command(SSD1306_NORMALDISPLAY);                 // 0xA6
-  #endif
-  
-  ssd1306_command(SSD1306_DISPLAYON);//--turn on oled panel
+  ssd1325_command(SSD1325_SETROWPERIOD);
+  ssd1325_command(0x51);
+  ssd1325_command(SSD1325_SETPHASELEN);
+  ssd1325_command(0x55);
+  ssd1325_command(SSD1325_SETPRECHARGECOMP);
+  ssd1325_command(0x02);
+  ssd1325_command(SSD1325_SETPRECHARGECOMPENABLE);
+  ssd1325_command(0x28);
+  ssd1325_command(SSD1325_SETVCOMLEVEL); // Set High Voltage Level of COM Pin
+  ssd1325_command(0x1C);                 //?
+  ssd1325_command(SSD1325_SETVSL);       // set Low Voltage Level of SEG Pin
+  ssd1325_command(0x0D | 0x02);
+
+  ssd1325_command(SSD1325_NORMALDISPLAY); /* set display mode */
+  ssd1325_command(SSD1325_DISPLAYON);//--turn on oled panel
 			
 	//LL_mDelay(300);
-	//ssd1306_command(SSD1306_DISPLAYALLON);//--turn on oled panel
+	//ssd1325_command(SSD1325_DISPLAYALLON);//--turn on oled panel
 }	
 
-void ssd1306_begin_default() {
-	ssd1306_begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS);
+void ssd1325_begin_default() {
+	ssd1325_begin(SSD1325_SWITCHCAPVCC, SSD1325_I2C_ADDRESS);
 }
 
 void display_invert(uint8_t i) {
   if (i) {
-    ssd1306_command(SSD1306_INVERTDISPLAY);
+    ssd1325_command(SSD1325_INVERTDISPLAY);
   } else {
-    ssd1306_command(SSD1306_NORMALDISPLAY);
+    ssd1325_command(SSD1325_NORMALDISPLAY);
   }
 }
 
-void ssd1306_command(uint8_t c) { 
+void ssd1325_command(uint8_t c) { 
   if (SCREEN_USE_SPI)
   {
     // SPI
@@ -374,7 +273,7 @@ void ssd1306_command(uint8_t c) {
   }
 }
 
-void ssd1306_data(uint8_t c) {
+void ssd1325_data(uint8_t c) {
   if (SCREEN_USE_SPI)
   {
     // SPI
@@ -404,7 +303,7 @@ void display_dim(uint8_t dim) {
   if (dim) {
     contrast = 0; // Dimmed display
   } else {
-    if (_vccstate == SSD1306_EXTERNALVCC) {
+    if (_vccstate == SSD1325_EXTERNALVCC) {
       contrast = 0x9F;
     } else {
       contrast = 0xCF;
@@ -412,18 +311,20 @@ void display_dim(uint8_t dim) {
   }
   // the range of contrast to too small to be really useful
   // it is useful to dim the display
-  ssd1306_command(SSD1306_SETCONTRAST);
-  ssd1306_command(contrast);
+  ssd1325_command(SSD1325_SETCONTRAST);
+  ssd1325_command(contrast);
 }
 
 void display_update(void) {
-  ssd1306_command(SSD1306_COLUMNADDR);
-  ssd1306_command(0);   // Column start address (0 = reset)
-  ssd1306_command(127); // Column end address (127 = reset)
+	// Set column address (0–63 for 128px wide display)
+  ssd1325_command(SSD1325_COLUMNADDR);
+  ssd1325_command(0x00);
+  ssd1325_command((SSD1325_LCDWIDTH / 2) - 1);
 
-  ssd1306_command(SSD1306_PAGEADDR);
-  ssd1306_command(0); // Page start address (0 = reset)
-  ssd1306_command((SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
+	// Set row address (0–63)
+  ssd1325_command(SSD1325_ROWADDR);
+  ssd1325_command(0x00);
+  ssd1325_command(SSD1325_LCDHEIGHT - 1);
 
   if (SCREEN_USE_SPI)
   {
@@ -433,7 +334,7 @@ void display_update(void) {
 		LL_GPIO_ResetOutputPin(_cs_port, _cs_pin->Pin);
 	  //__NOP();		// May not be necessary - needs testing
 
-    for (uint16_t i=0; i<(SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8); i++) {
+    for (uint16_t i=0; i<(SSD1325_LCDWIDTH*SSD1325_LCDHEIGHT/2); i++) {
       fastSPIwrite(buffer[i]);
     }
 	  //__NOP();		// May not be necessary - needs testing
@@ -444,7 +345,7 @@ void display_update(void) {
     // I2C
 		uint8_t control = 0x40;
 		
-    for (uint16_t i=0; i<(SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8); i++)
+    for (uint16_t i=0; i<(SSD1325_LCDWIDTH*SSD1325_LCDHEIGHT/2); i++)
 		{
       // send a bunch of data in one xmission
 			I2Cwrite_address();
@@ -463,13 +364,13 @@ void display_update(void) {
 
 // clear everything
 void gfx_clearBuffer(void) {
-  memset(buffer, 0, (SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8));
+  memset(buffer, 0, (SSD1325_LCDWIDTH*SSD1325_LCDHEIGHT/2));
 }
 
 
 void shiftOut(GPIO_TypeDef * dataPort, uint32_t dataPin, GPIO_TypeDef * clockPort, uint32_t clockPin, uint8_t bitOrder, uint8_t val)
 {
-#if SSD1306_MSB_FIRST
+#if SSD1325_MSB_FIRST
 	// MSB first
 	for (uint8_t mask = 0x80; mask != 0; mask >>= 1)
 	{
@@ -515,7 +416,7 @@ void fastSPIwrite(uint8_t d) {
 		while (!LL_SPI_IsActiveFlag_TXE(SCREEN_SPI));
 		while (LL_SPI_IsActiveFlag_BSY(SCREEN_SPI));
   } else {
-    shiftOut(_sid_port, _sid_pin->Pin, _sclk_port, _sclk_pin->Pin, 1, d);		// SSD1306 specs show MSB out first
+    shiftOut(_sid_port, _sid_pin->Pin, _sclk_port, _sclk_pin->Pin, 1, d);		// SSD1325 specs show MSB out first
   }
 }
 
@@ -531,7 +432,7 @@ void I2Cwrite_finish() {
 	I2Ctransmission_finish(SCREEN_I2C);
 }
 
-void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
+void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint8_t color) {
   uint8_t bSwap = false;
   switch(_rotation) { 
     case 0:
@@ -565,42 +466,48 @@ void gfx_drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
   }
 }
 
-void gfx_drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint16_t color) {
-  // Do bounds/limit checks
-  if(y < 0 || y >= SCREEN_HEIGHT) { return; }
+void gfx_drawFastHLineInternal(int16_t x, int16_t y, int16_t w, uint8_t color)
+{
+    if (y < 0 || y >= SCREEN_HEIGHT)
+        return;
 
-  // make sure we don't try to draw below 0
-  if(x < 0) { 
-    w += x;
-    x = 0;
-  }
+    if (x < 0) {
+        w += x;
+        x = 0;
+    }
 
-  // make sure we don't go off the edge of the display
-  if( (x + w) > SCREEN_WIDTH) { 
-    w = (SCREEN_HEIGHT- x);
-  }
+    if ((x + w) > SCREEN_WIDTH) {
+        w = SCREEN_WIDTH - x;
+    }
 
-  // if our width is now negative, punt
-  if(w <= 0) { return; }
+    if (w <= 0)
+        return;
 
-  // set up the pointer for  movement through the buffer
-  register uint8_t *pBuf = buffer;
-  // adjust the buffer pointer for the current row
-  pBuf += ((y/8) * SSD1306_LCDWIDTH);
-  // and offset x columns in
-  pBuf += x;
+    color &= 0x0F;
+    uint8_t packed = (color << 4) | color;
 
-  register uint8_t mask = 1 << (y&7);
+    uint8_t *pBuf = &buffer[(y * (SSD1325_LCDWIDTH >> 1)) + (x >> 1)];
 
-  if(color == WHITE) { 
-    while(w--) { *pBuf++ |= mask; }
-  } else {
-    mask = ~mask;
-    while(w--) { *pBuf++ &= mask; }
-  }
+    // Handle leading odd pixel
+    if (x & 1) {
+        *pBuf = (*pBuf & 0xF0) | color;
+        pBuf++;
+        w--;
+    }
+
+    // Write full bytes (2 pixels at once)
+    while (w >= 2) {
+        *pBuf++ = packed;
+        w -= 2;
+    }
+
+    // Handle trailing odd pixel
+    if (w) {
+        *pBuf = (*pBuf & 0x0F) | (color << 4);
+    }
 }
 
-void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
+void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint8_t color) {
   uint8_t bSwap = false;
   switch(_rotation) { 
     case 0:
@@ -634,104 +541,45 @@ void gfx_drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
 }
 
 
-void gfx_drawFastVLineInternal(int16_t x, int16_t __y, int16_t __h, uint16_t color) {
+void gfx_drawFastVLineInternal(int16_t x, int16_t y, int16_t h, uint8_t color)
+{
+    if (x < 0 || x >= SCREEN_WIDTH)
+        return;
 
-  // do nothing if we're off the left or right side of the screen
-  if(x < 0 || x >= SCREEN_WIDTH) { return; }
-
-  // make sure we don't try to draw below 0
-  if(__y < 0) { 
-    // __y is negative, this will subtract enough from __h to account for __y being 0
-    __h += __y;
-    __y = 0;
-
-  } 
-
-  // make sure we don't go past the height of the display
-  if( (__y + __h) > SCREEN_HEIGHT) { 
-    __h = (SCREEN_HEIGHT - __y);
-  }
-
-  // if our height is now negative, punt 
-  if(__h <= 0) { 
-    return;
-  }
-
-  // this display doesn't need ints for coordinates, use local byte registers for faster juggling
-  register uint8_t y = __y;
-  register uint8_t h = __h;
-
-
-  // set up the pointer for fast movement through the buffer
-  register uint8_t *pBuf = buffer;
-  // adjust the buffer pointer for the current row
-  pBuf += ((y/8) * SSD1306_LCDWIDTH);
-  // and offset x columns in
-  pBuf += x;
-
-  // do the first partial byte, if necessary - this requires some masking
-  register uint8_t mod = (y&7);
-  if(mod) {
-    // mask off the high n bits we want to set 
-    mod = 8-mod;
-
-    // note - lookup table results in a nearly 10% performance improvement in fill* functions
-    // register uint8_t mask = ~(0xFF >> (mod));
-    static uint8_t premask[8] = {0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE };
-    register uint8_t mask = premask[mod];
-
-    // adjust the mask if we're not going to reach the end of this byte
-    if( h < mod) { 
-      mask &= (0XFF >> (mod-h));
+    if (y < 0) {
+        h += y;
+        y = 0;
     }
 
-    if(color == WHITE) { 
-      *pBuf |= mask;
+    if ((y + h) > SCREEN_HEIGHT) {
+        h = SCREEN_HEIGHT - y;
+    }
+
+    if (h <= 0)
+        return;
+
+    color &= 0x0F;
+
+    uint16_t stride = (SSD1325_LCDWIDTH >> 1);
+    uint8_t *pBuf = &buffer[(y * stride) + (x >> 1)];
+
+    if (x & 1) {
+        // low nibble
+        while (h--) {
+            *pBuf = (*pBuf & 0xF0) | color;
+            pBuf += stride;
+        }
     } else {
-      *pBuf &= ~mask;
+        // high nibble
+        uint8_t c = color << 4;
+
+        while (h--) {
+            *pBuf = (*pBuf & 0x0F) | c;
+            pBuf += stride;
+        }
     }
-
-    // fast exit if we're done here!
-    if(h<mod) { return; }
-
-    h -= mod;
-
-    pBuf += SSD1306_LCDWIDTH;
-  }
-
-
-  // write solid bytes while we can - effectively doing 8 rows at a time
-  if(h >= 8) { 
-    // store a local value to work with 
-    register uint8_t val = (color == WHITE) ? 255 : 0;
-
-    do  {
-      // write our value in
-      *pBuf = val;
-
-      // adjust the buffer forward 8 rows worth of data
-      pBuf += SSD1306_LCDWIDTH;
-
-      // adjust h & y (there's got to be a faster way for me to do this, but this should still help a fair bit for now)
-      h -= 8;
-    } while(h >= 8);
-  }
-
-  // now do the final partial byte, if necessary
-  if(h) {
-    mod = h & 7;
-    // this time we want to mask the low bits of the byte, vs the high bits we did above
-    // register uint8_t mask = (1 << mod) - 1;
-    // note - lookup table results in a nearly 10% performance improvement in fill* functions
-    static uint8_t postmask[8] = {0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F };
-    register uint8_t mask = postmask[mod];
-    if(color == WHITE) { 
-      *pBuf |= mask;
-    } else { 
-      *pBuf &= ~mask;
-    }
-  }
 }
+
 
 // UI screen visualizer
 void display_buildUIScreen(UI_Screen* screen)
@@ -897,5 +745,4 @@ void display_buildUIScreen(UI_Screen* screen)
 	
 	display_update();
 	display_invert(UI_MAIN_COLOR_INVERTED);
-}		
-
+}

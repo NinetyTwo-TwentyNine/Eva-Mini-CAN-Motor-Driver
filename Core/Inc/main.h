@@ -55,7 +55,7 @@ extern "C" {
 
 #include "flash_control.h"
 #include "i2c_control.h"
-#include "GFX_SSD1306.h"
+#include "GFX_SSD1325.h"
 #include "mcp23008.h"
 #include "can_parser.h"
 #include "frequency_calc_basic.h"

@@ -372,7 +372,7 @@ int main(void)
   LL_TIM_EnableCounter(TIM4);
 	
 	
-	ssd1306_begin_default();
+	ssd1325_begin_default();
 	sequence_turnDisplayOn(false);
 	
 	LL_CAN_Init(true);

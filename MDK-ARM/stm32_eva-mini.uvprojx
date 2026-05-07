@@ -551,9 +551,9 @@
               <FilePath>..\Core\Inc\GFX_General.h</FilePath>
             </File>
             <File>
-              <FileName>GFX_SSD1306.h</FileName>
+              <FileName>GFX_SSD1325.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Core\Inc\GFX_SSD1306.h</FilePath>
+              <FilePath>..\Core\Inc\GFX_SSD1325.h</FilePath>
             </File>
             <File>
               <FileName>mcp23008.h</FileName>
@@ -651,9 +651,9 @@
               <FilePath>..\Core\Src\GFX_General.c</FilePath>
             </File>
             <File>
-              <FileName>GFX_SSD1306.c</FileName>
+              <FileName>GFX_SSD1325.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Core\Src\GFX_SSD1306.c</FilePath>
+              <FilePath>..\Core\Src\GFX_SSD1325.c</FilePath>
             </File>
             <File>
               <FileName>mcp23008.c</FileName>
