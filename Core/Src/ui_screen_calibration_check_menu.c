@@ -143,21 +143,12 @@ static UI_Element_Visual* CCMHelper_SetElementFunctionality(UI_Screen* screen, u
 		UI_Element_Visual *e = ui_findVisualById(screen, label_ids[item_pos]);
 		if (e == NULL) return NULL;
 		
-		(tab_index_on) ? (e->tab_index = label_tab_ids[item_pos]) : (e->tab_index = 0);
-		
-		UI_Callback main = NULL, selection = NULL, onselect = NULL;
-		if (functionality_on)
+		if (!tab_index_on && screen->hovered == e)
 		{
-			main = CalibrationCheckMenu_OnItemPressed_Main;
-			int16_t val_pos = CCMHelper_GetValPosFromItemId(label_ids[item_pos]);
-			if (CCMHelper_CheckValPosValidity(val_pos))
-			{
-				selection = CalibrationCheckMenu_OnItemPressed_Selection;
-				onselect = CalibrationCheckMenu_OnItemPressed_OnSelect;
-			}
+			ui_hoverNext(screen, 1);
 		}
-		
-		ui_bindInteractable(screen, e, main, selection, onselect);
+		ui_setElementFlags(e, UI_ELEMENT_FLAG_ALT_COLOR | UI_ELEMENT_FLAG_TAB_OFF, !tab_index_on);
+		ui_setElementFlags(e, UI_ELEMENT_FLAG_FUNC_OFF, !functionality_on);
 		return e;
 }
 static void CCMHelper_SetElementFunctionality_Array(UI_Screen* screen, uint8_t* elem_array, uint8_t elem_count, uint8_t tab_index_on, uint8_t functionality_on)
@@ -232,10 +223,6 @@ static void CalibrationCheckMenu_ScreenCallback(UI_Screen* screen)
 			}
 			
 			
-			if (screen->hovered != NULL && (screen->hovered->id == begin_check_id || screen->hovered->id == stop_check_id))
-			{
-				ui_hoverNext(screen, 1);
-			}
 			CCMHelper_SetElementFunctionality(screen, CCM_POS_BEGIN_CHECK, 0, 0);
 			CCMHelper_SetElementFunctionality(screen, CCM_POS_STOP_CHECK, 0, 0);
 		}
@@ -521,8 +508,18 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 
     // Optional: assign visual ID
 		vis->id = label_ids[i];
+		vis->alt_color = DARKGRAY;
 
     // ---------------- Interactable ----------------
+		UI_Callback main = CalibrationCheckMenu_OnItemPressed_Main, selection = NULL, onselect = NULL;
+		int16_t val_pos = CCMHelper_GetValPosFromItemId(label_ids[i]);
+		if (CCMHelper_CheckValPosValidity(val_pos))
+		{
+			selection = CalibrationCheckMenu_OnItemPressed_Selection;
+			onselect = CalibrationCheckMenu_OnItemPressed_OnSelect;
+		}
+		ui_bindInteractable(screen, vis, main, selection, onselect);
+		
 		if (label_ids[i] == back_id)
 		{
 			CCMHelper_SetElementFunctionality(screen, i, 1, 1);

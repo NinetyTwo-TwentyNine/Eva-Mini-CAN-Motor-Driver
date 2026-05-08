@@ -10,6 +10,10 @@
 #define UI_ELEMENT_MAX_LINE_COUNT 32
 #define UI_MAX_ELEMENT_COUNT 32
 
+#define UI_ELEMENT_FLAG_FUNC_OFF 1
+#define UI_ELEMENT_FLAG_TAB_OFF 2
+#define UI_ELEMENT_FLAG_ALT_COLOR 4
+
 typedef enum
 {
 	VISUAL_TYPE_TEXT,
@@ -37,16 +41,16 @@ typedef void (*UI_Callback_General)(UI_Screen* screen);
 
 struct Struct_UI_Element_Visual {
 	uint8_t id;
-	
 	UI_Element_Visual_Type type;
+	
 	uint16_t pos_x, pos_y;
-	uint8_t color;
-	
+	uint8_t color, alt_color;
 	uint8_t tab_index;
-	int8_t cursor_offset;
 	
+	int8_t cursor_offset;
 	int8_t offset_y_up, offset_y_down;
 	
+	uint8_t special_flags;
 	
 	//UI_Element_Interactable* interactable;
 	
@@ -109,6 +113,9 @@ void ui_editBitmap(UI_Element_Visual* e, uint8_t new_w, uint8_t new_h, uint8_t* 
 
 UI_Element_Visual* ui_findVisualById(UI_Screen* screen, uint8_t id);
 UI_Element_Interactable* ui_findInteractableByVisual(UI_Screen* screen, UI_Element_Visual* vis);
+
+void ui_setElementFlags(UI_Element_Visual* e, uint8_t flags, uint8_t add_or_remove);
+uint8_t ui_checkElementFlags(UI_Element_Visual* e, uint8_t flags);
 
 void ui_hoverNext(UI_Screen* screen, uint8_t direction);
 void ui_selectItem(UI_Screen* screen, uint8_t toggle, uint8_t is_selected);

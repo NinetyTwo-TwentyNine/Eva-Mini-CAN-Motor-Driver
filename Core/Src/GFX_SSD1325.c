@@ -622,13 +622,18 @@ void display_buildUIScreen(UI_Screen* screen)
 	for (uint8_t i = 0; i < screen->visuals_count; i++)
 	{
 		UI_Element_Visual* curr_visual = &(screen->visuals[i]);
+		uint8_t color;
+		if (ui_checkElementFlags(curr_visual, UI_ELEMENT_FLAG_ALT_COLOR))
+			color = curr_visual->alt_color;
+		else
+			color = curr_visual->color;
 		int16_t x0 = curr_visual->pos_x, y0 = curr_visual->pos_y - offset_y;
 		gfx_setCursor(x0, y0);
 		switch(curr_visual->type)
 		{
 			case VISUAL_TYPE_TEXT:
 			{
-				gfx_setTextColor(curr_visual->color, curr_visual->color);
+				gfx_setTextColor(color, color);
 				gfx_setTextSize(curr_visual->data.text.font);
 				gfx_print(curr_visual->data.text.text);
 			} break;
@@ -642,7 +647,7 @@ void display_buildUIScreen(UI_Screen* screen)
 						break;
 					}
 					uint8_t new_pos_x = x0 + curr_visual->data.lines.x_n[j], new_pos_y = y0 + curr_visual->data.lines.y_n[j];
-					gfx_drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, curr_visual->color);
+					gfx_drawLine(prev_pos_x, prev_pos_y, new_pos_x, new_pos_y, color);
 					prev_pos_x = new_pos_x;
 					prev_pos_y = new_pos_y;
 				}
@@ -650,32 +655,32 @@ void display_buildUIScreen(UI_Screen* screen)
 			case VISUAL_TYPE_TRIANGLE:
 			{
 				uint8_t x1 = x0 + curr_visual->data.triangle.x1, y1 = y0 + curr_visual->data.triangle.y1, x2 = x0 + curr_visual->data.triangle.x2, y2 = y0 + curr_visual->data.triangle.y2;
-				gfx_drawTriangle(x0, y0, x1, y1, x2, y2, curr_visual->color);
+				gfx_drawTriangle(x0, y0, x1, y1, x2, y2, color);
 				if (!curr_visual->data.triangle.is_hollow)
 				{
-					gfx_fillTriangle(x0, y0, x1, y1, x2, y2, curr_visual->color);
+					gfx_fillTriangle(x0, y0, x1, y1, x2, y2, color);
 				}
 			}	break;
 			case VISUAL_TYPE_RECTANGLE: 
 			{
-				gfx_drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, curr_visual->color);
+				gfx_drawRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, color);
 				if (!curr_visual->data.rectangle.is_hollow)
 				{
-					gfx_fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, curr_visual->color);
+					gfx_fillRect(x0, y0, curr_visual->data.rectangle.w, curr_visual->data.rectangle.h, color);
 				}
 			}	break;
 			case VISUAL_TYPE_CIRCLE:
 			{
 				uint8_t r = curr_visual->data.circle.radius, new_x = x0 + r, new_y = y0 - r;
-				gfx_drawCircle(new_x, new_y, r, curr_visual->color);
+				gfx_drawCircle(new_x, new_y, r, color);
 				if (!curr_visual->data.circle.is_hollow)
 				{
-					gfx_fillCircle(new_x, new_y, r, curr_visual->color);
+					gfx_fillCircle(new_x, new_y, r, color);
 				}
 			}	break;
 			case VISUAL_TYPE_BITMAP:
 			{
-				gfx_drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, curr_visual->color);
+				gfx_drawBitmap(x0, y0, curr_visual->data.bitmap.data, curr_visual->data.bitmap.w, curr_visual->data.bitmap.h, color);
 			}	break;
 		}
 	}

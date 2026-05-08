@@ -50,15 +50,18 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 
     // Optional: assign visual ID
 		vis->id = ids[i];
+		vis->alt_color = DARKGRAY;
 
     // ---------------- Interactable ----------------
-		if (!(ids[i] == calibration_check_id && !calibration_check_allowed))
+		UI_Element_Interactable* inter = ui_bindInteractable(
+			screen,
+			vis,
+			SeederOptionsMenu_OnItemPressed, NULL, NULL
+		);
+		
+		if (ids[i] == calibration_check_id && !calibration_check_allowed)
 		{
-			UI_Element_Interactable* inter = ui_bindInteractable(
-				screen,
-				vis,
-				SeederOptionsMenu_OnItemPressed, NULL, NULL
-			);
+			ui_setElementFlags(vis, UI_ELEMENT_FLAG_ALT_COLOR | UI_ELEMENT_FLAG_FUNC_OFF, 1);
 		}
   }
 

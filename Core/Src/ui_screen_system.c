@@ -40,7 +40,6 @@ void ui_clearScreen(UI_Screen* screen)
 {
   for (uint8_t i = 0; i < screen->visuals_count; i++) {
       UI_Element_Visual *e = &screen->visuals[i];
-
 			memset(e, 0, sizeof(*e));
   }
   for (uint8_t i = 0; i < screen->interactables_count; i++) {
@@ -68,6 +67,7 @@ UI_Element_Visual* ui_addVisualElement(UI_Screen *screen, UI_Element_Visual_Type
     e->pos_x = pos_x;
     e->pos_y = pos_y;
     e->color = color;
+		e->alt_color = color;
     e->tab_index = tab_index;
 		e->cursor_offset = cursor_offset;
     e->context = screen;
@@ -95,7 +95,7 @@ UI_Element_Interactable* ui_bindInteractable(UI_Screen *screen, UI_Element_Visua
 		inter = &(screen->interactables[screen->interactables_count++]);
 	}
 
-	memset(inter, 0, sizeof(UI_Element_Interactable));\
+	memset(inter, 0, sizeof(UI_Element_Interactable));
 	
 	inter->id = 0;
 	
@@ -153,6 +153,7 @@ void ui_editBitmap(UI_Element_Visual* e, uint8_t new_w, uint8_t new_h, uint8_t* 
 	e->data.bitmap.data = new_bitmap;
 }
 
+
 UI_Element_Visual* ui_findVisualById(UI_Screen* screen, uint8_t id)
 {
 	for (uint8_t i = 0; i < screen->visuals_count; i++)
@@ -178,6 +179,24 @@ UI_Element_Interactable* ui_findInteractableByVisual(UI_Screen* screen, UI_Eleme
 }
 
 
+void ui_setElementFlags(UI_Element_Visual* e, uint8_t flags, uint8_t add_or_remove)
+{
+	if (add_or_remove)
+	{
+		e->special_flags |= flags;
+	}
+	else
+	{
+		e->special_flags &= ~flags;
+	}
+}
+
+uint8_t ui_checkElementFlags(UI_Element_Visual* e, uint8_t flags)
+{
+	return (e->special_flags & flags) != 0;
+}
+
+
 void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 {
 	uint8_t tabindex_prev;
@@ -198,7 +217,7 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 		for (uint8_t i = 0; i < screen->visuals_count; i++)
 		{
 			uint8_t ti = screen->visuals[i].tab_index;
-			if (ti == 0)
+			if (ti == 0 || ui_checkElementFlags(&screen->visuals[i], UI_ELEMENT_FLAG_TAB_OFF))
 				continue;
 
 			if (ti > tabindex_prev)
@@ -217,7 +236,7 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 		for (uint8_t i = 0; i < screen->visuals_count; i++)
 		{
 			uint8_t ti = screen->visuals[i].tab_index;
-			if (ti == 0)
+			if (ti == 0 || ui_checkElementFlags(&screen->visuals[i], UI_ELEMENT_FLAG_TAB_OFF))
 				continue;
 
 			if (ti < tabindex_prev)
@@ -238,11 +257,12 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 		// initialize best to first valid element
 		for (uint8_t i = 0; i < screen->visuals_count; i++)
 		{
-			if (screen->visuals[i].tab_index != 0)
-			{
-				best = &screen->visuals[i];
-				break;
-			}
+			uint8_t ti = screen->visuals[i].tab_index;
+			if (ti == 0 || ui_checkElementFlags(&screen->visuals[i], UI_ELEMENT_FLAG_TAB_OFF))
+				continue;
+			
+			best = &screen->visuals[i];
+			break;
 		}
 
 		if (best != NULL)
@@ -251,7 +271,7 @@ void ui_hoverNext(UI_Screen* screen, uint8_t direction)
 			for (uint8_t i = 0; i < screen->visuals_count; i++)
 			{
 				uint8_t ti = screen->visuals[i].tab_index;
-				if (ti == 0)
+				if (ti == 0 || ui_checkElementFlags(&screen->visuals[i], UI_ELEMENT_FLAG_TAB_OFF))
 					continue;
 
 				if (direction)
@@ -304,10 +324,17 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 		case PRESS_TYPE_UP: case PRESS_TYPE_DOWN:
 			if (screen->hovered != NULL && screen->item_is_selected)
 			{
-				UI_Element_Interactable* i = ui_findInteractableByVisual(screen, screen->hovered);
-				if (i != NULL && i->main_callback != NULL)
+				if (!ui_checkElementFlags(screen->hovered, UI_ELEMENT_FLAG_TAB_OFF | UI_ELEMENT_FLAG_FUNC_OFF))
 				{
-					i->main_callback(screen, interaction_type, i);
+					UI_Element_Interactable* i = ui_findInteractableByVisual(screen, screen->hovered);
+					if (i != NULL && i->main_callback != NULL)
+					{
+						i->main_callback(screen, interaction_type, i);
+					}
+				}
+				else
+				{
+					screen->item_is_selected = false;
 				}
 			}
 			else
@@ -316,7 +343,7 @@ void UI_PerformUserInteraction(UI_Screen* screen, UI_Element_Press_Type interact
 			}
 			break;
 		case PRESS_TYPE_OK:
-			if (screen->hovered != NULL)
+			if (screen->hovered != NULL && !ui_checkElementFlags(screen->hovered, UI_ELEMENT_FLAG_FUNC_OFF))
 			{
 				UI_Element_Interactable* i = ui_findInteractableByVisual(screen, screen->hovered);
 				if (i != NULL)
