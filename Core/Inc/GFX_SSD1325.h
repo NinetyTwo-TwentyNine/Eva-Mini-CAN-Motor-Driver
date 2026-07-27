@@ -29,7 +29,7 @@ All text above, and the splash screen must be included in any redistribution
 
 
 #define BLACK				0x00
-#define DARKGRAY		0x04
+#define DARKGRAY		0x05
 #define LIGHTGRAY		0x0A
 #define WHITE				0x0F
 

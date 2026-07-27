@@ -153,6 +153,7 @@ void UI_BuildProgressMenu(UI_Screen* screen)
 		PMHelper_ConvertValToText(screen, i);
   }
 
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	

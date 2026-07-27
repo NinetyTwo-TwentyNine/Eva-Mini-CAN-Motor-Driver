@@ -232,6 +232,7 @@ void UI_BuildMainMenu(UI_Screen* screen)
 		icon_elem->id = icon_ids[i];
 	}
 	
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = false;
   // Default hover index: None
 	

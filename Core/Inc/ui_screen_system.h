@@ -79,6 +79,8 @@ struct Struct_UI_Element_Interactable {
 };
 
 struct Struct_UI_Screen {
+	uint8_t bg_color;
+	
 	UI_Element_Interactable interactables[UI_MAX_ELEMENT_COUNT];
 	uint8_t interactables_count;
 	

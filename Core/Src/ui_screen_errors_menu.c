@@ -176,6 +176,7 @@ void UI_BuildErrorsMenu(UI_Screen* screen)
 		vis2->id = i * 2 + 1;
   }
 
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	

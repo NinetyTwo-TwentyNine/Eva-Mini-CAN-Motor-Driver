@@ -260,6 +260,7 @@ void UI_BuildSpeedSensorMenu(UI_Screen* screen)
 		SSMHelper_ConvertValToText(screen, i);
   }
 
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	

@@ -50,7 +50,7 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 
     // Optional: assign visual ID
 		vis->id = ids[i];
-		vis->alt_color = DARKGRAY;
+		vis->alt_color = LIGHTGRAY;
 
     // ---------------- Interactable ----------------
 		UI_Element_Interactable* inter = ui_bindInteractable(
@@ -59,12 +59,13 @@ void UI_BuildSeederOptionsMenu(UI_Screen* screen)
 			SeederOptionsMenu_OnItemPressed, NULL, NULL
 		);
 		
-		if (ids[i] == calibration_check_id && !calibration_check_allowed)
+		if ((ids[i] == calibration_check_id || ids[i] == calibration_check_2_id) && !calibration_check_allowed)
 		{
 			ui_setElementFlags(vis, UI_ELEMENT_FLAG_ALT_COLOR | UI_ELEMENT_FLAG_FUNC_OFF, 1);
 		}
   }
 
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	

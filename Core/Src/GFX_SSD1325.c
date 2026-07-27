@@ -364,7 +364,13 @@ void display_update(void) {
 
 // clear everything
 void gfx_clearBuffer(void) {
-  memset(buffer, 0, (SSD1325_LCDWIDTH*SSD1325_LCDHEIGHT/2));
+  memset(buffer, 0, SSD1325_LCDWIDTH * SSD1325_LCDHEIGHT / 2);
+}
+
+void gfx_fillBufferWithColor(uint8_t color) {
+	uint8_t packed = (color << 4) | color;
+	
+  memset(buffer, packed, SSD1325_LCDWIDTH * SSD1325_LCDHEIGHT / 2);
 }
 
 
@@ -584,7 +590,7 @@ void gfx_drawFastVLineInternal(int16_t x, int16_t y, int16_t h, uint8_t color)
 // UI screen visualizer
 void display_buildUIScreen(UI_Screen* screen)
 {
-	gfx_clearBuffer();
+	gfx_fillBufferWithColor(screen->bg_color);
 	
 	uint16_t offset_y = screen->offset_y;
 	UI_Element_Visual* curr_hovered = screen->hovered;

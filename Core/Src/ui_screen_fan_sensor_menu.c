@@ -304,6 +304,7 @@ void UI_BuildFanSensorMenu(UI_Screen* screen)
 		FSMHelper_ConvertValToText(screen, i);
   }
 
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	

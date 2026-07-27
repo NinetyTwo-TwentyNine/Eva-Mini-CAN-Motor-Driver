@@ -508,7 +508,7 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
 
     // Optional: assign visual ID
 		vis->id = label_ids[i];
-		vis->alt_color = DARKGRAY;
+		vis->alt_color = LIGHTGRAY;
 
     // ---------------- Interactable ----------------
 		UI_Callback main = CalibrationCheckMenu_OnItemPressed_Main, selection = NULL, onselect = NULL;
@@ -586,6 +586,7 @@ void UI_BuildCalibrationCheckMenu(UI_Screen* screen)
   }
 	
 	
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	

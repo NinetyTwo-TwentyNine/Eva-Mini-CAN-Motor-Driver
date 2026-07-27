@@ -57,6 +57,7 @@ void UI_BuildOptionsMenu(UI_Screen* screen)
     );
   }
 
+	screen->bg_color = DARKGRAY;
 	screen->should_draw_cursor = true;
 	screen->cursor_left_or_right = 1;
 	
